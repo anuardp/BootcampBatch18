@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Exercises", "Exercises", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogicExercise", "Exercises\LogicExercise\LogicExercise.csproj", "{1683A03B-800F-4CC9-9C6F-4983C071D4E2}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Self-Experiments", "Self-Experiments", "{50912AAE-3C54-4A80-96DE-A8A0AA3C1A8E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CobaCoba1", "Self-Experiments\CobaCoba1\CobaCoba1.csproj", "{AA48F4AF-0E5F-4AFC-B0BE-3AA196F444D5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,8 +36,13 @@ Global
 		{1683A03B-800F-4CC9-9C6F-4983C071D4E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1683A03B-800F-4CC9-9C6F-4983C071D4E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1683A03B-800F-4CC9-9C6F-4983C071D4E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA48F4AF-0E5F-4AFC-B0BE-3AA196F444D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA48F4AF-0E5F-4AFC-B0BE-3AA196F444D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA48F4AF-0E5F-4AFC-B0BE-3AA196F444D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA48F4AF-0E5F-4AFC-B0BE-3AA196F444D5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1683A03B-800F-4CC9-9C6F-4983C071D4E2} = {BEF72006-7BD0-4B1A-AB3C-EF14F4BC0AC7}
+		{AA48F4AF-0E5F-4AFC-B0BE-3AA196F444D5} = {50912AAE-3C54-4A80-96DE-A8A0AA3C1A8E}
 	EndGlobalSection
 EndGlobal
