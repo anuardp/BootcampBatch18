@@ -35,21 +35,50 @@
 // Console.WriteLine($"Yeah, {guess} is the correct number");
 
 
-int[,] num = new int[5,5];
+// int[,] num = new int[5,5];
 
-for(int i = 0; i < num.GetLength(0); i++)
+// for(int i = 0; i < num.GetLength(0); i++)
+// {
+//     for(int j = 0; j < num.GetLength(1); j++)
+//     {
+//         num[i,j]=i*j;
+//         Console.Write(num[i,j]);
+//         if(j<num.GetLength(1))Console.Write(" ");
+//     }
+//     Console.WriteLine();
+// }
+
+
+// Panda p1 = new Panda("Pan Dee");
+// Panda p2 = new Panda("Pan Dah");
+
+// Console.WriteLine(p1.Name);          // Pan Dee
+// Console.WriteLine(p2.Name);          // Pan Dah
+// Console.WriteLine(Panda.Population); // 2
+
+// public class Panda
+// {
+//     public string Name;             // Instance field
+//     public static int Population;   // Static field
+
+//     public Panda(string n)          // Constructor
+//     {
+//         Name = n;                   // Assign the instance field
+//         Population = Population + 1; // Increment the static Population field
+//     }
+// }
+
+
+
+int x = 20;
+
+void Kali(int x)
 {
-    for(int j = 0; j < num.GetLength(1); j++)
-    {
-        num[i,j]=i*j;
-        Console.Write(num[i,j]);
-        if(j<num.GetLength(1))Console.Write(" ");
-    }
-    Console.WriteLine();
+    x *= 20;
+    Console.WriteLine($"Local value: {x}");
 }
-
-
-
+Kali(x);
+Console.WriteLine($"Global value: {x}");
 
 
 
