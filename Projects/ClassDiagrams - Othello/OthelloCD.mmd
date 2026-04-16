@@ -1,0 +1,95 @@
+---
+config:
+  layout: dagre
+---
+classDiagram
+direction TB
+    class Color {
+	    Black
+	    White
+    }
+
+    class Position {
+	    +int Row
+	    +int Col
+	    +Position(int Row, int Col)
+    }
+
+    class Disk {
+	    +Color DiskColor
+	    +Disk(Color DiskColor)
+    }
+
+    class Player {
+	    +string Name
+	    +Color PlayerColor
+	    +Player(string name, Color playerColor)
+    }
+
+    class Square {
+	    +Position Position
+	    +Disk? Disk
+	    +Square(Position Position, Disk? Disk)
+    }
+
+    class Board {
+	    +Square[,] Board
+	    +Board(Square[,] Board)
+    }
+
+    class Game {
+	    -IBoard _board
+	    -dictionary~IPlayer, int~ _playerScore
+	    -dictionary~IPlayer; List~Position~~ _validPlacesToMove
+	    -List~IPlayer~ _players
+	    +event Action~IPlayer~ OnTurnSkipped
+	    +event Action~IPlayer~ OnTurnSwitched
+	    +event Action~IBoard~ OnMoveMade
+	    +event Action~IBoard~ OnGameConcluded
+	    -IPlayer _currentPlayer
+	    -int _totalDisksOnBoard
+	    +Game(List~IPlayer~ Players, IBoard Board)
+	    +void StartGame()
+	    +void InitializeGame(List~IPlayer~ Players, IBoard Board)
+		+List~IPlayer~ GetPlayer(List~IPlayer~ Players)
+		+IPlayer GetCurrentPlayer(IPlayer CurrentPlayer)
+		+IBoard GetBoard(IBoard Board)
+		+int GetTotalDisks(int TotalDisksOnBoard)
+	    +bool HasAnyValidMove(IBoard Board, IPlayer CurrentPlayer)
+	    +List~Position~ GetValidMoves(IPlayer CurrentPlayer)
+	    +bool IsMoveValid(IPlayer CurrentPlayer, Square Square)
+	    +void putDiskOnBoard(IPlayer Player, Square Square, int TotalDisksOnBoard)
+	    +void DiskFlip(IPlayer Player, IBoard Board)
+	    +void SwitchTurn(IPlayer CurrentPlayer)
+	    +bool IsBoardFull(int TotalDisksOnBoard)
+	    +bool IsBothPlayersCannotMove()
+	    +void EndGame()
+	    +void CheckWinner()
+	    +void NotifyTurnSkipped(IPlayer Player)
+	    +void NotifyTurnSwitched(IPlayer Player)
+	    +void NotifyMoveMade(IBoard Board, IPlayer Player)
+    }
+
+    class IBoard {
+	    +Square[,] Board
+    }
+
+    class IPlayer {
+	    +String Name
+	    +Color PlayerColor
+    }
+
+	<<enumeration>> Color
+	<<struct>> Position
+	<<interface>> IBoard
+	<<interface>> IPlayer
+
+	IBoard <|.. Board 
+    IPlayer <|.. Player 
+    Game --> IBoard 
+    Game --> IPlayer 
+    Board --> Square 
+    Square --> Position 
+    Square --> Disk 
+    Disk --> Color
+    Player --> Color
