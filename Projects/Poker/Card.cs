@@ -1,10 +1,7 @@
 public class Card : ICard
 {
-    Suit Suit{get;}
-    Rank Rank{get;}s
-
-    // Suit ICard.Suit => Suit;
-    // Rank ICard.Rank => Rank;
+    public Suit Suit{get;}
+    public Rank Rank{get;}
 
     public Card(Rank rank, Suit suit)
     {
