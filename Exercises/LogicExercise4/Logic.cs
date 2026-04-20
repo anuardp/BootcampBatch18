@@ -34,6 +34,15 @@ public class Logic
         else Console.WriteLine($"Rule with number {num} doesn't exist. Can't delete a non-existent rule!!");
     }
 
+    public void PrintRules()
+    {
+        Console.WriteLine("All rules so far: ");
+        foreach(var r in Rules)
+        {
+            Console.WriteLine($"{r.Number} - {r.Word}");
+        }
+    }
+
     public string ConcatString(string s, string s2) => s += s2;
     public bool CekBagi(int a, int b) => a % b == 0;
     
