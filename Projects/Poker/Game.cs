@@ -2,24 +2,61 @@ using System.Security.Cryptography;
 
 public class Game
 {
-    public List<IPlayer> Players {get;set;}
-    public List<IDeck> Deck{get; set;}
-    public List<IBoard> Board{get; set;}
+    private List<IPlayer> _players {get;set;}
+    private List<IDeck> _deck{get; set;}
+    private List<IBoard> _board{get; set;}
 
-    public Dictionary<IPlayer, List<ICard>> PlayerHands{get; set;}
-    public Dictionary<IPlayer, List<IChip>> PlayerChips{get; set;}
-    public Dictionary<IPlayer, List<IChip>> PlayerBets{get; set;}
-    public Dictionary<IPlayer, bool> PlayerFolded{get; set;}        
-    public Dictionary<IPlayer, bool> PlayerAllIn{get; set;}
+    private Dictionary<IPlayer, List<ICard>> PlayerHands{get; set;}
+    private Dictionary<IPlayer, List<IChip>> PlayerChips{get; set;}
+    private Dictionary<IPlayer, List<IChip>> PlayerBets{get; set;}
+    private Dictionary<IPlayer, bool> PlayerFolded{get; set;}        
+    private Dictionary<IPlayer, bool> PlayerAllIn{get; set;}
 
     public GamePhase Phase {get; set;}
+    private int _dealerIndex;
+    private int _smallBlindIndex;
+    private int _bigBlindIndex;
+    private int _currentPlayerIndex;
+    private int _currentBetAmount; 
+    private List<IPot> _pots;  // for main pot and side pots
+
+    public int SmallBlind{get; set;}
+    public int BigBlind{get; set;}
+
+    public event Action<IPlayer, PlayerAction, int> OnPlayerActed;
 
 
-    public Game(List<IPlayer> players, List<IDeck> deck, List<IBoard> board)
+
+    public Game(List<IPlayer> players, List<IDeck> deck, List<IBoard> board, int smallBlind, int bigBlind)
     {
-        Players = players;
-        Deck = deck;
-        Board = board;
+        _players = players;
+        _deck = deck;
+        _board = board;
+        SmallBlind = smallBlind;
+        BigBlind = bigBlind;
+
+        _playerHands = new Dictionary<IPlayer, List<ICard>>();
+        _playerChips = new Dictionary<IPlayer, List<IChip>>();
+        _playerBets = new Dictionary<IPlayer, int>();
+        _playerFolded = new Dictionary<IPlayer, bool>();
+        _playerAllIn = new Dictionary<IPlayer, bool>();
+
+        foreach(var p in players)
+        {
+            _playerHands[p] = new List<ICard>();
+            _playerChips[p] = AmountToChips(1000);   
+            _playerBets[p] = 0;
+            _playerFolded[p] = false;
+            _playerAllIn[p] = false;
+
+            Random rng = new Random();
+            _dealerIndex = rng.Next(0, players.Count);
+            _smallBlindIndex = (_dealerIndex + 1) % players.Count();
+            _bigBlindIndex = (_dealerIndex + 2) % players.Count();
+            _currentBetAmount = 0;
+            _pots = new List<IPot>();
+            _phase = GamePhase.PreFlop;
+        }
     }
 
     public void ShuffleDeck()
