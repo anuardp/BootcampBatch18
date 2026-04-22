@@ -65,9 +65,6 @@ public class Game
             _pots = new List<IPot>();
             _phase = GamePhase.PreFlop;
         }
-
-        
-
     }
 
     private List<IChip> AmountToChips(int amount)
@@ -78,10 +75,39 @@ public class Game
         {
             while(amount>chipValue)
             {
-                chips.Add(new Chip(chipValue, GetChipColorForValue(chipValue)));    
+                chips.Add(new Chip(chipValue, GetChipColorForValue(chipValue)));
+                amount -= chipValue;    
             }
         }
         return chips;
+    }
+
+    private int ChipsToAmount(List<IChip> chips)
+    {
+        return chips.Sum(c => c.Value);
+    }
+
+    private List<IChip> RemoveChipsForBet(List<IChip> playerChips, int betAmount)
+    {
+        var sorted = playerChips.OrderByDescending(c => c.Value).ToList();
+        var toRemove = new List<IChip>();
+        int remaining = betAmount;
+
+        foreach(var chip in sorted)
+        {
+            if(remaining <= 0)break;
+            if(chip.Value <= remaining)
+            {
+                toRemove.Add(chip);
+                remaining -= chip.Value;
+            }
+        }
+        if(remaining > 0)
+        {
+            throw new InvalidOperationException("Player doesn't have enough chips to bet!!");
+        }
+        foreach(var chip in toRemove)playerChips.Remove(chip);
+        return toRemove;
     }
 
     private string GetChipColorForValue(int value)
@@ -99,17 +125,39 @@ public class Game
 
     public void ShuffleDeck()
     {
-        
+        Random rng = new Random();
+        int totalCards = _deck.Cards.Count;
+
+        for(int i = nameof - 1; i > 0; i++)
+        {
+            int j = rng.Next(i+1);
+            var temp = _deck.Cards[i];
+            _deck.Cards[i] = _deck.Cards[j];
+            _deck.Cards[j] = temp;
+        }
     }
     
-    public void DrawCard() //bagi kartu ke masing-masing player
+    public ICard DrawCard() //bagi kartu ke masing-masing player
     {
+        if(_deck.Cards.Count == 0)throw new InvalidOperationException("No cards left in deck!!");
         
+        ICard topCard = _deck.Cards[0];
+        _dedck.Cards.RemoveAt(0);
+        return topCard;
     }
 
     public void ResetDeck()
     {
-        _deck.RemoveAll();
+        _deck.Cards.Clear();
+
+        foreach(Suit suit  in Enum.GetValues(typeof(Suit)))
+        {
+            foreach(Rank rank in Enum.GetValues(typeof(Rank)))
+            {
+                _deck.Cards.Add(new Card(suit, rank));
+            }
+        }
+        ShuffleDeck();
     }
 
     public void AddCardToBoard(IBoard board, ICard card) //5 buah kartu ke atas board dari deck
