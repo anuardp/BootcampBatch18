@@ -5,7 +5,7 @@ public class Pot : IPot
 
     public Pot(List<IPlayer> eligiblePlayers, int Amount)
     {
-        EligiblePlayers = eligiblePlayers;
+        EligiblePlayers = eligiblePlayers ?? new List<IPlayer>();
         Amount = 0;
     }
 }

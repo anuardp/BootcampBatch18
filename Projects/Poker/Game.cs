@@ -1,10 +1,15 @@
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Collections.Generic;
 
 public class Game
 {
     private List<IPlayer> _players {get;set;}
     private List<ICard> _deck{get; set;}
     private List<ICard> _board{get; set;}
+    private List<IPot> _pots{get; set;} 
+
+
 
     private Dictionary<IPlayer, List<ICard>> _playerHands{get; set;}
     private Dictionary<IPlayer, List<IChip>> _playerChips{get; set;}
@@ -16,11 +21,11 @@ public class Game
 
     private GamePhase _phase {get; set;}
     private int _dealerIndex{get; set;}
-    private int _smallBlindIndex;
-    private int _bigBlindIndex;
-    private int _currentPlayerIndex;
-    private int _currentBetAmount; 
-    private List<IPot> _pots;  // for main pot and side pots
+    private int _smallBlindIndex {get; set;}
+    private int _bigBlindIndex {get; set;}
+    private int _currentPlayerIndex {get; set;}
+    private int _currentBetAmount{get; set;}
+    
 
     public int SmallBlind{get; set;}
     public int BigBlind{get; set;}
@@ -31,7 +36,7 @@ public class Game
 
 
 
-    public Game(List<IPlayer> players, List<ICard> deck, List<ICard> board, int smallBlind, int bigBlind)
+    public Game(List<IPlayer> players, List<ICard> deck, List<ICard> board, List<IPot> pot, int smallBlind, int bigBlind)
     {
         _players = players;
         _deck = new List<ICard>();
@@ -206,15 +211,18 @@ public class Game
     public void Fold(IPlayer player) //kasih tag fold ke player (player tidak akan bisa bet lagi untuk keseluruhan ronde permainan dan gak bisa menangin chip)
     {
         _playerFolded[player] = true;
+        UpdatePotEligibility();
     }
     public void Call(IPlayer player) 
     {
         _playerCalled[player] = true;
-        
+        PlaceBet(player, _playerBets[player]);
     }
     public void Raise(IPlayer player, int bet) // Player naikin jumlah bet 
     {
-        
+        _playerCalled[player] = false;
+        _playerBets[player] += bet;
+        PlaceBet(player, _playerBets[player]);
     }
     public void Check(IPlayer player) //Skip turn untuk sementara (tidak bet, tapi tidak fold). Hanya berlaku jika bet saat ini nilai currentBet masih 0
     {
@@ -231,10 +239,44 @@ public class Game
     }
     // public void DecideBotAction(IPlayer bot)
     
-    public void AddToPot(IPlayer player, int betAmount) //Tambah chip ke dalam Pot
+    public void PlaceBet(IPlayer player, int addChips) //Tambah bet ke dalam pot 
     {
         int prevTotal = _playerBets[player];
-        int currentTotal = _playerBets[player];
+        int currentTotal = prevTotal + addChips;
+        _playerBets[player] = currentTotal;
+
+        int remaining = addChips;
+
+        for (int i = 0; i < _pots.Count && remaining > 0; i++)
+        {
+            IPot pot = _pots[i];
+            int potCap = GetPotCap(pot); 
+        
+            int alreadyInThisPot = Math.Min(prevTotal, potCap);
+            int newInThisPot = Math.Min(currentTotal, potCap);
+            int neededForThisPot = newInThisPot - alreadyInThisPot;
+            
+            if (neededForThisPot > 0)
+            {
+                int take = Math.Min(remaining, neededForThisPot);
+                pot.Amount += take;
+                remaining -= take;
+            }
+        }   
+    }
+
+    public int GetPotCap(IPot pot) //batas jumlah bet yang bisa ditaruh ke dalam suatu pot tertentu
+    {   
+        return pot.Amount;
+    }
+   
+    public void UpdatePotEligibility()
+    {   
+        for(int i=0;i<_pots.Count;i++)
+        {
+            int cap = GetPotCap(_pots[i]);
+            _pots[i].EligiblePlayers = _players.Where(p => !_playerFolded[p] && _playerBets[p] >= cap).ToList();
+        }
     }
 
     public void SwitchTurn(List<IPlayer> player) //Ganti giliran pemain
@@ -247,17 +289,157 @@ public class Game
         
     }
 
-    public HandRank EvaluateHand(IPlayer player) //cek tingkat kekuatan kartu player
+    public HandStrength EvaluateHand(IPlayer player) //cek tingkat kekuatan kartu player
     {
-        //tambah 5 kartu dari board ke player.
+        //tambah 2 kartu dari board dan 5 kartu dari board ke player.
 
-        foreach(var boardCard in _board)
+        var allCards = _playerHands[player].Concat(_board).ToList();
+        var bestStrength = new HandStrength(HandRank.HighCard, new List<Rank>());
+
+        for(int i = 0; i < 3; i++)
         {
-            _playerHands[player].Add(boardCard);
+            for(int j = 1; j < 4; j++)
+            {
+                for(int k = 2; k < 5; k++)
+                {
+                    for(int l = 3; l < 6; l++)
+                    {
+                        for(int m = 4; m < 7; m++)
+                        {
+                            var combination = new List<ICard> {allCards[i], allCards[j], allCards[k], allCards[l], allCards[m]};
+
+                            var strength = EvaluateFiveCardHand(combination);
+
+                        }
+                    }
+                }                
+            }
+        }
+        return bestStrength;
+    }
+
+    private int CompareHandStrength(HandStrength a, HandStrength b)
+    {
+        if (a == null && b == null) return 0;
+        if (a == null) return -1;
+        if (b == null) return 1;
+
+        if (a.Rank != b.Rank)
+            return a.Rank.CompareTo(b.Rank);
+
+        //Rank sama, cek dari tie-breakernya
+        for (int i = 0; i < a.TieBreakers.Count && i < b.TieBreakers.Count; i++)
+        {
+            if (a.TieBreakers[i] != b.TieBreakers[i])
+                return a.TieBreakers[i].CompareTo(b.TieBreakers[i]);
         }
 
-        
+        //Tie breaker juga sama, hasil bet dibagi...
+        return 0;
     }
+
+  
+    
+    public HandStrength EvaluateFiveCardHand(List<ICard> fiveCards)
+    {
+        // Urut kartu dari rank tertinggi (Ace dianggap paling tinggi)
+        var sorted = fiveCards.OrderByDescending(c => c.Rank).ToList();
+        var ranks = sorted.Select(c => (int)c.Rank).ToList();
+        var suits = sorted.Select(c => c.Suit).ToList();
+
+        // Cek flush (suits sama semua)
+        bool isFlush = suits.Distinct().Count() == 1;
+
+        // Cek straight
+        bool isStraight = false;
+        // Straight -> max - min = 4
+        var distinctRanks = ranks.Distinct().ToList();
+        if (distinctRanks.Count == 5 && distinctRanks.Max() - distinctRanks.Min() == 4)
+            isStraight = true;
+        // Kasus spesifik: Staright, tapi kartu Ace paling bawah (A,2,3,4,5)
+        if (!isStraight && distinctRanks.Equals(new[] { 14, 2, 3, 4, 5 }))
+        {
+            isStraight = true;
+            // Utk kasus spesifik, kartu tertinggi utk Tie-Breaker adalah 5
+            ranks = new List<int> { 5, 4, 3, 2, 1 }; // urut ulang
+            sorted = sorted.OrderByDescending(c => c.Rank == Rank.Ace ? 1 : (int)c.Rank).ToList();
+        }
+
+        // Frekuensi kemunculan masing-masing rank dari kartu ditangan
+        var rankGroups = ranks.GroupBy(r => r).OrderByDescending(g => g.Count()).ThenByDescending(g => g.Key).ToList();
+        int firstCount = rankGroups[0].Count();
+        int secondCount = rankGroups.Count > 1 ? rankGroups[1].Count() : 0;
+
+        // Cek HandRank dan tie-breakernya
+        HandRank handRank;
+        List<Rank> tieBreakers = new List<Rank>();
+
+        // Four of a kind
+        if (firstCount == 4)
+        {
+            handRank = HandRank.FourOfAKind;
+            tieBreakers.Add((Rank)rankGroups[0].Key); // the four-of-a-kind rank
+            tieBreakers.Add((Rank)rankGroups[1].Key); // the kicker
+        }
+        // Full house
+        else if (firstCount == 3 && secondCount == 2)
+        {
+            handRank = HandRank.FullHouse;
+            tieBreakers.Add((Rank)rankGroups[0].Key); // triplet rank
+            tieBreakers.Add((Rank)rankGroups[1].Key); // pair rank
+        }
+        // Flush
+        else if (isFlush)
+        {
+            handRank = HandRank.Flush;
+            // Tie-breakers: all five ranks in descending order
+            tieBreakers = sorted.Select(c => c.Rank).ToList();
+        }
+        // Straight
+        else if (isStraight)
+        {
+            handRank = HandRank.Straight;
+            // Highest card of the straight (for Ace-low, that's 5)
+            int high = ranks.Max();
+            tieBreakers.Add((Rank)high);
+        }
+        // Three of a kind
+        else if (firstCount == 3)
+        {
+            handRank = HandRank.ThreeOfAKind;
+            tieBreakers.Add((Rank)rankGroups[0].Key); // the triplet rank
+            // Add the remaining two kickers (descending)
+            foreach (var g in rankGroups.Skip(1))
+                tieBreakers.Add((Rank)g.Key);
+        }
+        // Two pair
+        else if (firstCount == 2 && secondCount == 2)
+        {
+            handRank = HandRank.TwoPair;
+            // Higher pair first, then lower pair, then kicker
+            tieBreakers.Add((Rank)rankGroups[0].Key);
+            tieBreakers.Add((Rank)rankGroups[1].Key);
+            tieBreakers.Add((Rank)rankGroups[2].Key);
+        }
+        // One pair
+        else if (firstCount == 2)
+        {
+            handRank = HandRank.OnePair;
+            tieBreakers.Add((Rank)rankGroups[0].Key); // pair rank
+            // Add the three kickers in descending order
+            foreach (var g in rankGroups.Skip(1))
+                tieBreakers.Add((Rank)g.Key);
+        }
+        // High card
+        else
+        {
+            handRank = HandRank.HighCard;
+            tieBreakers = sorted.Select(c => c.Rank).ToList();
+        }
+
+        return new HandStrength(handRank, tieBreakers);
+    }
+
 
     public void AwardPot(IPlayer winner)
     {
@@ -268,7 +450,10 @@ public class Game
     {
         foreach(var p in _players)
         {
+            _playerHands[p] = new List<ICard>();
+            _playerChips[p] = AmountToChips(1000);   
             _playerBets[p] = 0;
+            _playerChecked[p] = false;
             _playerCalled[p] = false;
             _playerFolded[p] = false;
             _playerAllIn[p] = false;
@@ -282,9 +467,6 @@ public class Game
             _phase = GamePhase.PreFlop;
         }        
     }
-
-
-    //Handle Action
 
     public List<ICard> GetHand(IPlayer player)
     {
