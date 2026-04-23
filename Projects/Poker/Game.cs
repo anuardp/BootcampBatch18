@@ -175,7 +175,7 @@ public class Game
 
     public void ResetBoard() //Reset kartu di board -> Setelah satu sesi permainan berakhir 
     {
-        _board.Clear();        
+        _board.Clear();
     }
 
     public void DealHoleCards() // Bagi 2 kartu ke masing-masing player
@@ -235,6 +235,9 @@ public class Game
     public void AllIn(IPlayer player) //Player bet semua chip yang dipunya...
     {
         _playerAllIn[player] = true;
+        var cek = new List<IPlayer>();
+
+        _pots.Add(_currentBetAmount + _playerBets[player], cek);
 
     }
     // public void DecideBotAction(IPlayer bot)
@@ -446,6 +449,7 @@ public class Game
         
     }
 
+    //Execute setelah 1 sesi game selesai
     public void StartNewRound() 
     {
         foreach(var p in _players)
