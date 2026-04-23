@@ -3,8 +3,8 @@ using System.Security.Cryptography;
 public class Game
 {
     private List<IPlayer> _players {get;set;}
-    private List<IDeck> _deck{get; set;}
-    private List<IBoard> _board{get; set;}
+    private List<ICard> _deck{get; set;}
+    private List<ICard> _board{get; set;}
 
     private Dictionary<IPlayer, List<ICard>> _playerHands{get; set;}
     private Dictionary<IPlayer, List<IChip>> _playerChips{get; set;}
@@ -31,11 +31,11 @@ public class Game
 
 
 
-    public Game(List<IPlayer> players, List<IDeck> deck, List<IBoard> board, int smallBlind, int bigBlind)
+    public Game(List<IPlayer> players, List<ICard> deck, List<ICard> board, int smallBlind, int bigBlind)
     {
         _players = players;
-        _deck = deck;
-        _board = board;
+        _deck = new List<ICard>();
+        _board = new List<ICard>();
         SmallBlind = smallBlind;
         BigBlind = bigBlind;
 
@@ -123,52 +123,54 @@ public class Game
         }
     }
 
-    public void ShuffleDeck()
+    public void ShuffleDeck(List<ICard> deck)
     {
         Random rng = new Random();
-        int totalCards = _deck.Cards.Count;
+        int totalCards = deck.Count;
 
-        for(int i = nameof - 1; i > 0; i++)
+        for(int i = totalCards - 1; i > 0; i++)
         {
             int j = rng.Next(i+1);
-            var temp = _deck.Cards[i];
-            _deck.Cards[i] = _deck.Cards[j];
-            _deck.Cards[j] = temp;
+            (deck[i], deck[j]) = (deck[j], deck[i]);
         }
     }
     
-    public ICard DrawCard() //bagi kartu ke masing-masing player
+    public ICard DrawCard() //logic untuk draw kartu, selalu ambil dari yang paling atas setelah di-shuffle
     {
-        if(_deck.Cards.Count == 0)throw new InvalidOperationException("No cards left in deck!!");
+        if(_deck.Count == 0)throw new InvalidOperationException("No cards left in deck!!");
         
-        ICard topCard = _deck.Cards[0];
-        _dedck.Cards.RemoveAt(0);
+        ICard topCard = _deck[0];
+        _deck.RemoveAt(0);
         return topCard;
     }
 
     public void ResetDeck()
     {
-        _deck.Cards.Clear();
+        _deck.Clear();
 
         foreach(Suit suit  in Enum.GetValues(typeof(Suit)))
         {
             foreach(Rank rank in Enum.GetValues(typeof(Rank)))
             {
-                _deck.Cards.Add(new Card(suit, rank));
+                _deck.Add(new Card(rank, suit));
             }
         }
-        ShuffleDeck();
+        ShuffleDeck(_deck);
     }
 
-    public void AddCardToBoard(IBoard board, ICard card) //5 buah kartu ke atas board dari deck
+    public void AddCardToBoard(List<ICard> board, GamePhase phase) //5 buah kartu ke atas board dari deck
     {
-        
+        if(_phase == GamePhase.Flop)
+        {
+            for(int i=0; i < 3; i++)board.Add(DrawCard());
+        }
+        else if(phase == GamePhase.Turn || phase == GamePhase.River)
+            board.Add(DrawCard());
     }
 
     public void ResetBoard() //Reset kartu di board -> Setelah satu sesi permainan berakhir 
     {
-        _board.RemoveAll();
-        
+        _board.Clear();        
     }
 
     public void DealHoleCards() // Bagi 2 kartu ke masing-masing player
@@ -176,25 +178,21 @@ public class Game
         int i = 0;
         while (i < 2)
         {
-            foreach(var p in _players)
+            foreach(var p in _playerHands.Keys)
             {
-                _playerHands[p].Add(_deck[0]);       
+                _playerHands[p].Add(DrawCard());
             }   
+            i--;
         }
     }
 
-    public void DealFlop() //Buka 3 kartu pertama diatas board (3 kartu pertama diperlihatkan)
-    {
-        
-    }
-    public void DealTurn() //Buka kartu ke-4 
-    {
-        
-    }
-    public void DealRiver() //Buka kartu ke-5
-    {
-        
-    }
+    //Buka 3 kartu pertama diatas board (3 kartu pertama diperlihatkan)
+    public void DealFlop() => AddCardToBoard(_board, GamePhase.Flop);
+    //Buka kartu ke-4 diatas board
+    public void DealTurn() => AddCardToBoard(_board, GamePhase.Turn);
+    //Buka kartu ke-5 diatas board
+    public void DealRiver() => AddCardToBoard(_board, GamePhase.River);
+    
 
     public void MoveToNextPhase() // Pindah ke fase ronde berikutnya (misal dari Flop ke Turn, Turn ke River)
     {
@@ -202,6 +200,8 @@ public class Game
         else if(_phase == GamePhase.Flop) _phase = GamePhase.Turn;
         else if(_phase == GamePhase.Turn) _phase = GamePhase.River;
         else if(_phase == GamePhase.River) _phase = GamePhase.Showdown;
+
+        OnPhaseChanged.Invoke(_phase);
     }
     public void Fold(IPlayer player) //kasih tag fold ke player (player tidak akan bisa bet lagi untuk keseluruhan ronde permainan dan gak bisa menangin chip)
     {
@@ -210,35 +210,39 @@ public class Game
     public void Call(IPlayer player) 
     {
         _playerCalled[player] = true;
+        
     }
     public void Raise(IPlayer player, int bet) // Player naikin jumlah bet 
     {
         
     }
-    public void Check(IPlayer player) //Skip turn untuk sementara (tidak bet, tapi tidak fold). Hanya berlaku jika bet saat ini nilainya masih 0
+    public void Check(IPlayer player) //Skip turn untuk sementara (tidak bet, tapi tidak fold). Hanya berlaku jika bet saat ini nilai currentBet masih 0
     {
-        
+        if(_currentBetAmount == 0)
+        {
+            _playerChecked[player] = true;
+        }
+        else throw new InvalidOperationException("Cannot check anymore, Bet or Fold...");
     }
     public void AllIn(IPlayer player) //Player bet semua chip yang dipunya...
     {
         _playerAllIn[player] = true;
 
-
-        
     }
     // public void DecideBotAction(IPlayer bot)
     
-    public void AddToPot() //Tambah chip ke dalam Pot
+    public void AddToPot(IPlayer player, int betAmount) //Tambah chip ke dalam Pot
     {
-        
+        int prevTotal = _playerBets[player];
+        int currentTotal = _playerBets[player];
     }
 
-    public void SwitchTurn(IPlayer player) //Ganti giliran pemain
+    public void SwitchTurn(List<IPlayer> player) //Ganti giliran pemain
     {
-        
+        _currentPlayerIndex = (_currentPlayerIndex + 1) % player.Count; 
     }
 
-    public IPlayer EvaluateWinner()
+    public IPlayer EvaluateWinner() //Cek siapa yang menang. Kalau >1 yang menang, hadiah displit. 
     {
         
     }
@@ -246,6 +250,13 @@ public class Game
     public HandRank EvaluateHand(IPlayer player) //cek tingkat kekuatan kartu player
     {
         //tambah 5 kartu dari board ke player.
+
+        foreach(var boardCard in _board)
+        {
+            _playerHands[player].Add(boardCard);
+        }
+
+        
     }
 
     public void AwardPot(IPlayer winner)
@@ -263,9 +274,9 @@ public class Game
             _playerAllIn[p] = false;
 
             Random rng = new Random();
-            _dealerIndex = rng.Next(0, p.Count);
-            _smallBlindIndex = (_dealerIndex + 1) % p.Count();
-            _bigBlindIndex = (_dealerIndex + 2) % p.Count();
+            _dealerIndex = rng.Next(0, _players.Count);
+            _smallBlindIndex = (_dealerIndex + 1) % _players.Count();
+            _bigBlindIndex = (_dealerIndex + 2) % _players.Count();
             _currentBetAmount = 0;
             _pots = new List<IPot>();
             _phase = GamePhase.PreFlop;
@@ -284,9 +295,9 @@ public class Game
     {
         int totalChips = _playerChips.Count;
         int totalChipScore = 0;
-        foreach(var chip in _playerChips.)
+        foreach(var chip in _playerChips[player])
         {
-            totalChipScore += _playerChips.Values;
+            totalChipScore += chip.Value;
         }
         
     }
@@ -308,13 +319,12 @@ public class Game
         else return false;
     }
 
-    public bool IsBettingRoundOver() //cek apakah semua player yg tidak fold memutuskan untuk check atau all-in.
+    public bool IsBettingRoundOver() //cek apakah jumlah player yang masih belum fold tinggal satu saja atau belum
     {
         int betEndCheck = 0;
-        foreach(var p in _players)if(_playerCalled[p] || _playerAllIn[p])betEndCheck++;
+        foreach(var p in _players)if(_playerCalled[p])betEndCheck++;
         
-        if(betEndCheck == _players.Count)return true;
-        else return false;
+        return betEndCheck == _players.Count - 1;
     }
 
 }   
