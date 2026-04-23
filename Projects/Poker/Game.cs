@@ -13,8 +13,7 @@ public class Game
 
     private Dictionary<IPlayer, List<ICard>> _playerHands{get; set;}
     private Dictionary<IPlayer, List<IChip>> _playerChips{get; set;}
-    private Dictionary<IPlayer, int> _playerBets{get; set;}
-    private Dictionary<IPlayer, bool> _playerChecked{get; set;}        
+    private Dictionary<IPlayer, int> _playerBets{get; set;}  
     private Dictionary<IPlayer, bool> _playerCalled{get; set;}        
     private Dictionary<IPlayer, bool> _playerFolded{get; set;}        
     private Dictionary<IPlayer, bool> _playerAllIn{get; set;}
@@ -43,31 +42,31 @@ public class Game
         _board = new List<ICard>();
         SmallBlind = smallBlind;
         BigBlind = bigBlind;
+        _pots = new List<IPot>();
+        _pots.Add(new Pot(_players.ToList(), 0));
+        
 
         _playerHands = new Dictionary<IPlayer, List<ICard>>();
         _playerChips = new Dictionary<IPlayer, List<IChip>>();
         _playerBets = new Dictionary<IPlayer, int>();
-        _playerChecked = new Dictionary<IPlayer, bool>();
-        _playerCalled = new Dictionary<IPlayer, bool>();
         _playerFolded = new Dictionary<IPlayer, bool>();
         _playerAllIn = new Dictionary<IPlayer, bool>();
+
+        Random rng = new Random();
+        _dealerIndex = rng.Next(0, players.Count);
+        _smallBlindIndex = (_dealerIndex + 1) % players.Count();
+        _bigBlindIndex = (_dealerIndex + 2) % players.Count();
 
         foreach(var p in players)
         {
             _playerHands[p] = new List<ICard>();
             _playerChips[p] = AmountToChips(1000);   
             _playerBets[p] = 0;
-            _playerChecked[p] = false;
-            _playerCalled[p] = false;
             _playerFolded[p] = false;
             _playerAllIn[p] = false;
 
-            Random rng = new Random();
-            _dealerIndex = rng.Next(0, players.Count);
-            _smallBlindIndex = (_dealerIndex + 1) % players.Count();
-            _bigBlindIndex = (_dealerIndex + 2) % players.Count();
+            
             _currentBetAmount = 0;
-            _pots = new List<IPot>();
             _phase = GamePhase.PreFlop;
         }
     }
@@ -75,7 +74,7 @@ public class Game
     private List<IChip> AmountToChips(int amount)
     {
         var chips = new List<IChip>();
-        int[] chipsValue = {5000, 1000, 500, 100, 25};
+        int[] chipsValue = {5000, 1000, 500, 100, 50};
         foreach(int chipValue in chipsValue)
         {
             while(amount>chipValue)
@@ -123,9 +122,22 @@ public class Game
             case 1000: return "Black";
             case 500: return "Green";
             case 100: return "Red";
-            case 25: return "White";
+            case 50: return "White";
             default: return "Unknown";
         }
+    }
+
+    public void InitializeDeck()
+    {
+        _deck.Clear();  // assuming _deck is IDeck with a List<ICard> property
+        foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+        {
+            foreach (Rank rank in Enum.GetValues(typeof(Rank)))
+            {
+                _deck.Add(new Card(suit, rank));
+            }
+        }
+        ShuffleDeck(_deck);
     }
 
     public void ShuffleDeck(List<ICard> deck)
@@ -152,20 +164,12 @@ public class Game
     public void ResetDeck()
     {
         _deck.Clear();
-
-        foreach(Suit suit  in Enum.GetValues(typeof(Suit)))
-        {
-            foreach(Rank rank in Enum.GetValues(typeof(Rank)))
-            {
-                _deck.Add(new Card(rank, suit));
-            }
-        }
-        ShuffleDeck(_deck);
+        InitializeDeck();
     }
 
     public void AddCardToBoard(List<ICard> board, GamePhase phase) //5 buah kartu ke atas board dari deck
     {
-        if(_phase == GamePhase.Flop)
+        if(phase == GamePhase.Flop)
         {
             for(int i=0; i < 3; i++)board.Add(DrawCard());
         }
@@ -178,6 +182,45 @@ public class Game
         _board.Clear();
     }
 
+    private void PostBlinds()
+    {
+      
+        IPlayer smallBlindPlayer = _players[_smallBlindIndex];
+        IPlayer bigBlindPlayer = _players[_bigBlindIndex];
+
+        // Small blind
+        int smallBlindAmount = SmallBlind;
+        
+        int actualSmall = Math.Min(smallBlindAmount, GetTotalChips(smallBlindPlayer));
+        if (actualSmall > 0)
+        {
+            if (actualSmall < smallBlindAmount)  // not enough for full blind
+                _playerAllIn[smallBlindPlayer] = true;
+            PlaceBet(smallBlindPlayer, actualSmall);
+        }
+        else
+        {
+        
+            Fold(smallBlindPlayer);
+        }
+
+        // Big blind
+        int bigBlindAmount = BigBlind;
+        int actualBig = Math.Min(bigBlindAmount, GetTotalChips(bigBlindPlayer));
+        if (actualBig > 0)
+        {
+            if (actualBig < bigBlindAmount)  // not enough for full blind
+                _playerAllIn[bigBlindPlayer] = true;
+            PlaceBet(bigBlindPlayer, actualBig);
+            
+            _currentBetAmount = actualBig;
+        }
+        else
+        {
+            Fold(bigBlindPlayer);
+        }
+    }
+
     public void DealHoleCards() // Bagi 2 kartu ke masing-masing player
     {
         int i = 0;
@@ -187,7 +230,7 @@ public class Game
             {
                 _playerHands[p].Add(DrawCard());
             }   
-            i--;
+            i++;
         }
     }
 
@@ -213,37 +256,65 @@ public class Game
         _playerFolded[player] = true;
         UpdatePotEligibility();
     }
-    public void Call(IPlayer player) 
+    public void Call(IPlayer player)  //Bet sesuai dengan jumlah bet dari lawan lainnya
     {
         _playerCalled[player] = true;
-        PlaceBet(player, _playerBets[player]);
-    }
-    public void Raise(IPlayer player, int bet) // Player naikin jumlah bet 
-    {
-        _playerCalled[player] = false;
-        _playerBets[player] += bet;
-        PlaceBet(player, _playerBets[player]);
-    }
-    public void Check(IPlayer player) //Skip turn untuk sementara (tidak bet, tapi tidak fold). Hanya berlaku jika bet saat ini nilai currentBet masih 0
-    {
-        if(_currentBetAmount == 0)
+
+        int toCall = _currentBetAmount - _playerBets[player];
+        if (toCall <= 0)
+            throw new InvalidOperationException("No need to call, you can check.");
+        
+        int chips = GetTotalChips(player);
+        if (chips < toCall)
         {
-            _playerChecked[player] = true;
+            //trigger All-In kalau jumlah chip tersisa kurang untuk Call
+            AllIn(player);
+            return;
         }
-        else throw new InvalidOperationException("Cannot check anymore, Bet or Fold...");
+        
+        PlaceBet(player, toCall);
+    }
+    public void Raise(IPlayer player, int raiseToTotal) // Player naikin jumlah bet 
+    {
+        // raiseToTotal -> total jumlah bet baru (termasuk jumlah bet saat ini)
+        if (raiseToTotal <= _currentBetAmount)
+            throw new InvalidOperationException("Raise must be higher than current bet.");
+        
+        int additional = raiseToTotal - _playerBets[player];
+        if (additional <= 0)
+            throw new InvalidOperationException("Raise amount must be positive.");
+        
+        int chips = GetTotalChips(player);
+        if (chips < additional)
+        {
+            //Dianggap all-in kalau raisenya gak cukup
+            AllIn(player);
+            return;
+        }
+        
+        PlaceBet(player, additional);
+        _currentBetAmount = raiseToTotal;
+    }
+    public void Check(IPlayer player) //Skip turn untuk sementara (tidak bet, tapi tidak fold). Hanya berlaku jika bet masih bernilai 0
+    {
+        if (_currentBetAmount != 0) throw new InvalidOperationException("Cannot check – there is a bet to call.");
+
     }
     public void AllIn(IPlayer player) //Player bet semua chip yang dipunya...
     {
+        int allInAmount = GetTotalChips(player);
+        if (allInAmount == 0) return; 
         _playerAllIn[player] = true;
-        var cek = new List<IPlayer>();
+        PlaceBet(player, allInAmount); // handles pots, updates _playerBets, deducts chips
 
-        _pots.Add(_currentBetAmount + _playerBets[player], cek);
-
+        if(allInAmount > _currentBetAmount)_currentBetAmount = allInAmount;
     }
     // public void DecideBotAction(IPlayer bot)
     
     public void PlaceBet(IPlayer player, int addChips) //Tambah bet ke dalam pot 
     {
+        RemoveChipsForBet(_playerChips[player], addChips);
+
         int prevTotal = _playerBets[player];
         int currentTotal = prevTotal + addChips;
         _playerBets[player] = currentTotal;
@@ -253,7 +324,7 @@ public class Game
         for (int i = 0; i < _pots.Count && remaining > 0; i++)
         {
             IPot pot = _pots[i];
-            int potCap = GetPotCap(pot); 
+            int potCap = GetPotCap(i); 
         
             int alreadyInThisPot = Math.Min(prevTotal, potCap);
             int newInThisPot = Math.Min(currentTotal, potCap);
@@ -268,16 +339,29 @@ public class Game
         }   
     }
 
-    public int GetPotCap(IPot pot) //batas jumlah bet yang bisa ditaruh ke dalam suatu pot tertentu
+    public int GetPotCap(int potIndex) //batas jumlah bet yang bisa ditaruh ke dalam suatu pot tertentu
     {   
-        return pot.Amount;
+        var activePlayers = _players.Where(p => !_playerFolded[p]).ToList();
+        if (activePlayers.Count == 0) return 0;
+
+        // Total distinct of bets, urut menaik
+        var distinctBets = activePlayers.Select(p => _playerBets[p])
+                                        .Distinct()
+                                        .OrderBy(b => b)
+                                        .ToList();
+
+        //pot selalu terurut dari yang paling kecil
+        if (potIndex < distinctBets.Count)
+            return distinctBets[potIndex];
+        else
+            return distinctBets.Last(); // fallback (should not happen)
     }
    
     public void UpdatePotEligibility()
     {   
         for(int i=0;i<_pots.Count;i++)
         {
-            int cap = GetPotCap(_pots[i]);
+            int cap = GetPotCap(i);
             _pots[i].EligiblePlayers = _players.Where(p => !_playerFolded[p] && _playerBets[p] >= cap).ToList();
         }
     }
@@ -287,40 +371,36 @@ public class Game
         _currentPlayerIndex = (_currentPlayerIndex + 1) % player.Count; 
     }
 
-    public IPlayer EvaluateWinner() //Cek siapa yang menang. Kalau >1 yang menang, hadiah displit. 
+    //Dapetin semua kombinasi 5 kartu dari 7 kartu (Total ada 21)
+    private List<List<ICard>> GetAllFiveCardCombinations(List<ICard> cards)
     {
-        
+        var result = new List<List<ICard>>();
+        int n = cards.Count; 
+        for (int i = 0; i < n; i++)
+            for (int j = i + 1; j < n; j++)
+                for (int k = j + 1; k < n; k++)
+                    for (int l = k + 1; l < n; l++)
+                        for (int m = l + 1; m < n; m++)
+                            result.Add(new List<ICard> { cards[i], cards[j], cards[k], cards[l], cards[m] });
+        return result;
     }
-
+        
     public HandStrength EvaluateHand(IPlayer player) //cek tingkat kekuatan kartu player
     {
         //tambah 2 kartu dari board dan 5 kartu dari board ke player.
-
         var allCards = _playerHands[player].Concat(_board).ToList();
         var bestStrength = new HandStrength(HandRank.HighCard, new List<Rank>());
 
-        for(int i = 0; i < 3; i++)
+        
+        var combinations = GetAllFiveCardCombinations(allCards); 
+        foreach (var five in combinations)
         {
-            for(int j = 1; j < 4; j++)
-            {
-                for(int k = 2; k < 5; k++)
-                {
-                    for(int l = 3; l < 6; l++)
-                    {
-                        for(int m = 4; m < 7; m++)
-                        {
-                            var combination = new List<ICard> {allCards[i], allCards[j], allCards[k], allCards[l], allCards[m]};
-
-                            var strength = EvaluateFiveCardHand(combination);
-
-                        }
-                    }
-                }                
-            }
+            var strength = EvaluateFiveCardHand(five);
+            if (CompareHandStrength(strength, bestStrength) > 0)
+                bestStrength = strength;
         }
         return bestStrength;
     }
-
     private int CompareHandStrength(HandStrength a, HandStrength b)
     {
         if (a == null && b == null) return 0;
@@ -336,13 +416,9 @@ public class Game
             if (a.TieBreakers[i] != b.TieBreakers[i])
                 return a.TieBreakers[i].CompareTo(b.TieBreakers[i]);
         }
-
-        //Tie breaker juga sama, hasil bet dibagi...
         return 0;
     }
 
-  
-    
     public HandStrength EvaluateFiveCardHand(List<ICard> fiveCards)
     {
         // Urut kartu dari rank tertinggi (Ace dianggap paling tinggi)
@@ -443,33 +519,77 @@ public class Game
         return new HandStrength(handRank, tieBreakers);
     }
 
-
-    public void AwardPot(IPlayer winner)
+    //Cek siapa yang menang. Kalau >1 yang menang, hadiah displit. 
+    private List<IPlayer> GetWinners()
     {
-        
+        List<IPlayer> winners = new List<IPlayer>();
+        HandStrength bestStrength = null;
+
+        foreach (var player in _players.Where(p => !_playerFolded[p]))
+        {
+            HandStrength strength = EvaluateHand(player);
+            if (bestStrength == null || CompareHandStrength(strength, bestStrength) > 0)
+            {
+                bestStrength = strength;
+                winners.Clear();
+                winners.Add(player);
+            }
+            else if (CompareHandStrength(strength, bestStrength) == 0)
+            {
+                winners.Add(player);
+            }
+        }
+        return winners;
+    }
+
+    public void AwardPot()
+    {
+        foreach (var pot in _pots)
+        {
+            if (pot.Amount == 0) continue;
+            
+            // Determine winners among players eligible for this pot
+            var eligibleWinners = GetWinners().Where(w => pot.EligiblePlayers.Contains(w)).ToList();
+            if (eligibleWinners.Count == 0) continue;
+            
+            int share = pot.Amount / eligibleWinners.Count;
+            int remainder = pot.Amount % eligibleWinners.Count;
+            
+            for (int i = 0; i < eligibleWinners.Count; i++)
+            {
+                int winnings = share + (i == 0 ? remainder : 0);
+                // Tambahin chip ke player yg menang
+                _playerChips[eligibleWinners[i]].AddRange(AmountToChips(winnings));
+            }
+            pot.Amount = 0;
+        }
+        _pots.Clear();
     }
 
     //Execute setelah 1 sesi game selesai
     public void StartNewRound() 
     {
+        ResetDeck();
+        ResetBoard();
+        
+        Random rng = new Random();
+        _dealerIndex = rng.Next(0, _players.Count);
+        _smallBlindIndex = (_dealerIndex + 1) % _players.Count();
+        _bigBlindIndex = (_dealerIndex + 2) % _players.Count();
+        
+        _currentBetAmount = 0;
+        _phase = GamePhase.PreFlop;  
+        _pots.Clear();
+        _pots.Add(new Pot(_players.ToList(), 0));
+        
         foreach(var p in _players)
         {
-            _playerHands[p] = new List<ICard>();
-            _playerChips[p] = AmountToChips(1000);   
+            _playerHands[p].Clear();
             _playerBets[p] = 0;
-            _playerChecked[p] = false;
-            _playerCalled[p] = false;
             _playerFolded[p] = false;
             _playerAllIn[p] = false;
-
-            Random rng = new Random();
-            _dealerIndex = rng.Next(0, _players.Count);
-            _smallBlindIndex = (_dealerIndex + 1) % _players.Count();
-            _bigBlindIndex = (_dealerIndex + 2) % _players.Count();
-            _currentBetAmount = 0;
-            _pots = new List<IPot>();
-            _phase = GamePhase.PreFlop;
-        }        
+        }
+              
     }
 
     public List<ICard> GetHand(IPlayer player)
@@ -477,15 +597,11 @@ public class Game
         return _playerHands[player];
     }
 
-    public void GetTotalChips(IPlayer player)
+    public int GetTotalChips(IPlayer player)
     {
-        int totalChips = _playerChips.Count;
         int totalChipScore = 0;
-        foreach(var chip in _playerChips[player])
-        {
-            totalChipScore += chip.Value;
-        }
-        
+        foreach(var chip in _playerChips[player])totalChipScore += chip.Value;
+        return totalChipScore;
     }
     public bool IsFolded(IPlayer player)
     {
@@ -505,12 +621,14 @@ public class Game
         else return false;
     }
 
-    public bool IsBettingRoundOver() //cek apakah jumlah player yang masih belum fold tinggal satu saja atau belum
+    public bool IsBettingRoundOver() //cek apa sesi taruhan sudah selesai (semua eligible player sudah call)
     {
-        int betEndCheck = 0;
-        foreach(var p in _players)if(_playerCalled[p])betEndCheck++;
-        
-        return betEndCheck == _players.Count - 1;
+        foreach (var player in _players)
+        {
+            if (_playerFolded[player])continue;
+            if (_playerAllIn[player])continue;
+            if (_playerBets[player] != _currentBetAmount)return false;
+        }
+    return true;
     }
-
-}   
+}

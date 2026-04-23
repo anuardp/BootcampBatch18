@@ -3,9 +3,9 @@ public class Card : ICard
     public Suit Suit{get;}
     public Rank Rank{get;}
 
-    public Card(Rank rank, Suit suit)
+    public Card(Suit suit, Rank rank)
     {
-        Rank = rank;
         Suit = suit;
+        Rank = rank;
     }
 }
