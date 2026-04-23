@@ -23,7 +23,7 @@ public class Game
     private int _smallBlindIndex {get; set;}
     private int _bigBlindIndex {get; set;}
     private int _currentPlayerIndex {get; set;}
-    private int _currentBetAmount{get; set;}
+    public int _currentBetAmount{get; set;}
     
 
     public int SmallBlind{get; set;}
@@ -33,11 +33,14 @@ public class Game
     public event Action<GamePhase> OnPhaseChanged;
     public event Action<IPlayer> OnHandEnded;
 
+    public int CurrentBetAmount => _currentBetAmount;
+    public GamePhase Phase => _phase;
+    
 
 
-    public Game(List<IPlayer> players, List<ICard> deck, List<ICard> board, List<IPot> pot, int smallBlind, int bigBlind)
+    public Game(List<IPlayer> players, int smallBlind, int bigBlind)
     {
-        _players = players;
+        _players = players ?? new List<IPlayer>();;
         _deck = new List<ICard>();
         _board = new List<ICard>();
         SmallBlind = smallBlind;
@@ -129,6 +132,7 @@ public class Game
 
     public void InitializeDeck()
     {
+        if (_deck == null) _deck = new List<ICard>();
         _deck.Clear();  // assuming _deck is IDeck with a List<ICard> property
         foreach (Suit suit in Enum.GetValues(typeof(Suit)))
         {
@@ -142,10 +146,12 @@ public class Game
 
     public void ShuffleDeck(List<ICard> deck)
     {
+        if (deck == null || deck.Count <= 1) return;
+        
         Random rng = new Random();
         int totalCards = deck.Count;
 
-        for(int i = totalCards - 1; i > 0; i++)
+        for(int i = totalCards - 1; i > 0; i--)
         {
             int j = rng.Next(i+1);
             (deck[i], deck[j]) = (deck[j], deck[i]);
@@ -309,7 +315,6 @@ public class Game
 
         if(allInAmount > _currentBetAmount)_currentBetAmount = allInAmount;
     }
-    // public void DecideBotAction(IPlayer bot)
     
     public void PlaceBet(IPlayer player, int addChips) //Tambah bet ke dalam pot 
     {
@@ -366,9 +371,19 @@ public class Game
         }
     }
 
-    public void SwitchTurn(List<IPlayer> player) //Ganti giliran pemain
+    public void SwitchTurn() //Ganti giliran pemain
     {
-        _currentPlayerIndex = (_currentPlayerIndex + 1) % player.Count; 
+        int playerCount = _players.Count;
+        for (int i = 1; i <= playerCount; i++)
+        {
+            int nextIndex = (_currentPlayerIndex + i) % playerCount;
+            var nextPlayer = _players[nextIndex];
+            if (!_playerFolded[nextPlayer] && !_playerAllIn[nextPlayer])
+            {
+                _currentPlayerIndex = nextIndex;
+                return;
+            }
+        }
     }
 
     //Dapetin semua kombinasi 5 kartu dari 7 kartu (Total ada 21)
@@ -576,6 +591,7 @@ public class Game
         _dealerIndex = rng.Next(0, _players.Count);
         _smallBlindIndex = (_dealerIndex + 1) % _players.Count();
         _bigBlindIndex = (_dealerIndex + 2) % _players.Count();
+        _currentPlayerIndex = (_bigBlindIndex + 1) % _players.Count;
         
         _currentBetAmount = 0;
         _phase = GamePhase.PreFlop;  
@@ -631,4 +647,68 @@ public class Game
         }
     return true;
     }
+
+
+
+
+    
+    public IPlayer GetCurrentPlayer() => _players[_currentPlayerIndex];
+    public List<ICard> GetBoardCards() => _board;
+    public int GetTotalPot() => _pots.Sum(p => p.Amount);
+    public int GetPlayerBet(IPlayer player) => _playerBets[player];
+    public bool IsPlayerAllIn(IPlayer player) => _playerAllIn[player];
+    public List<IPlayer> GetActivePlayers() => _players.Where(p => !_playerFolded[p]).ToList();
+    public List<IPlayer> GetPlayers() => _players.ToList();
+
+    public void RemovePlayer(IPlayer player)
+    {
+        if (_players.Contains(player))
+        {
+            _players.Remove(player);
+            // Also remove any dictionaries entries if needed (optional, but clean)
+            _playerHands.Remove(player);
+            _playerChips.Remove(player);
+            _playerBets.Remove(player);
+            _playerFolded.Remove(player);
+            _playerAllIn.Remove(player);
+            // Recalculate indices if the removed player affects dealer/blind positions
+            // For simplicity, you can just recalc positions when starting next hand.
+            // But after removal, ensure the game still works.
+        }
+    }
+    // public void DecideBotAction(IPlayer bot)
+
+    public void HandleAction(IPlayer player, PlayerAction action, int amount)
+    {
+       
+        if (_playerFolded[player] || _playerAllIn[player]) return;
+
+        switch (action)
+        {
+            case PlayerAction.Fold:
+                Fold(player);
+                break;
+            case PlayerAction.Check:
+                Check(player);
+                break;
+            case PlayerAction.Call:
+                Call(player);
+                break;
+            case PlayerAction.Raise:
+                Raise(player, amount);
+                break;
+            case PlayerAction.AllIn:
+                AllIn(player);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(action), "Invalid action");
+        }
+
+        // After the action, raise the event
+        OnPlayerActed?.Invoke(player, action, amount);
+
+        // Advance to the next player (you need to implement this logic)
+        SwitchTurn();
+    }
 }
+
