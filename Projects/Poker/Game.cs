@@ -9,12 +9,9 @@ public class Game
     private List<ICard> _board{get; set;}
     private List<IPot> _pots{get; set;} 
 
-
-
     private Dictionary<IPlayer, List<ICard>> _playerHands{get; set;}
     private Dictionary<IPlayer, List<IChip>> _playerChips{get; set;}
-    private Dictionary<IPlayer, int> _playerBets{get; set;}  
-    private Dictionary<IPlayer, bool> _playerCalled{get; set;}        
+    private Dictionary<IPlayer, int> _playerBets{get; set;}         
     private Dictionary<IPlayer, bool> _playerFolded{get; set;}        
     private Dictionary<IPlayer, bool> _playerAllIn{get; set;}
 
@@ -48,7 +45,6 @@ public class Game
         _pots = new List<IPot>();
         _pots.Add(new Pot(_players.ToList(), 0));
         
-
         _playerHands = new Dictionary<IPlayer, List<ICard>>();
         _playerChips = new Dictionary<IPlayer, List<IChip>>();
         _playerBets = new Dictionary<IPlayer, int>();
@@ -68,7 +64,6 @@ public class Game
             _playerFolded[p] = false;
             _playerAllIn[p] = false;
 
-            
             _currentBetAmount = 0;
             _phase = GamePhase.PreFlop;
         }
@@ -76,21 +71,10 @@ public class Game
 
     private List<IChip> AmountToChips(int amount)
     {
-        // var chips = new List<IChip>();
-        // int[] chipsValue = {500, 100, 50};
-        // foreach(int chipValue in chipsValue)
-        // {
-        //     while(amount>chipValue)
-        //     {
-        //         chips.Add(new Chip(chipValue, GetChipColorForValue(chipValue)));
-        //         amount -= chipValue;    
-        //     }
-        // }
-        // return chips;
         var chips = new List<IChip>();
         int smallestChipValue = 50;
-        if (amount % smallestChipValue != 0)
-            throw new ArgumentException("Amount must be multiple of smallest chip value (50)");
+        // if (amount % smallestChipValue != 0)
+        //     throw new ArgumentException("Amount must be multiple of smallest chip value (50)");
         
         int chipCount = amount / smallestChipValue;
         for (int i = 0; i < chipCount; i++)
@@ -118,10 +102,10 @@ public class Game
                 remaining -= chip.Value;
             }
         }
-        if(remaining > 0)
-        {
-            throw new InvalidOperationException("Player doesn't have enough chips to bet!!");
-        }
+        // if(remaining > 0)
+        // {
+        //     throw new InvalidOperationException("Player doesn't have enough chips to bet!!");
+        // }
         foreach(var chip in toRemove)playerChips.Remove(chip);
         return toRemove;
     }
@@ -141,20 +125,18 @@ public class Game
     {
         if (_deck == null) _deck = new List<ICard>();
         _deck.Clear();
-        foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+        foreach (Suit suit in Enum.GetValues<Suit>())
         {
-            foreach (Rank rank in Enum.GetValues(typeof(Rank)))
+            foreach (Rank rank in Enum.GetValues<Rank>())
             {
                 _deck.Add(new Card(suit, rank));
             }
-        }
         ShuffleDeck(_deck);
+        }
     }
 
     public void ShuffleDeck(List<ICard> deck)
-    {
-        if (deck == null || deck.Count <= 1) return;
-        
+    {   
         Random rng = new Random();
         int totalCards = deck.Count;
 
@@ -172,8 +154,6 @@ public class Game
     
     public ICard DrawCard() //logic untuk draw kartu, selalu ambil dari yang paling atas setelah di-shuffle
     {
-        if(_deck.Count == 0)throw new InvalidOperationException("No cards left in deck!!");
-        
         ICard topCard = _deck[0];
         _deck.RemoveAt(0);
         return topCard;
@@ -201,8 +181,7 @@ public class Game
     }
 
     private void PostBlinds()
-    {
-      
+    { 
         IPlayer smallBlindPlayer = _players[_smallBlindIndex];
         IPlayer bigBlindPlayer = _players[_bigBlindIndex];
 
@@ -251,7 +230,6 @@ public class Game
             i++;
         }
     }
-
     //Buka 3 kartu pertama diatas board (3 kartu pertama diperlihatkan)
     public void DealFlop() => AddCardToBoard(_board, GamePhase.Flop);
     //Buka kartu ke-4 diatas board
@@ -393,7 +371,7 @@ public class Game
             if (!_playerFolded[nextPlayer] && !_playerAllIn[nextPlayer])
             {
                 _currentPlayerIndex = nextIndex;
-                return;
+                break;
             }
         }
     }

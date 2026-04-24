@@ -146,12 +146,21 @@ class Program
     static (PlayerAction action, int amount) BotDecision(Game game, IPlayer bot)
     {
         int chips = game.GetTotalChips(bot);
-        int toCall = game.CurrentBetAmount - game.GetPlayerBet(bot);
+        int toCall = game.CurrentBetAmount - game.BigBlind;
         Random rand = new Random();
 
         if (toCall == 0)
         {
-            return (PlayerAction.Check, 0);
+            int raiseAmount = game.CurrentBetAmount + game.BigBlind;
+            if (raiseAmount > chips)
+            {
+                // Not enough for minimum raise → go all-in
+                return (PlayerAction.AllIn, chips);
+            }
+            else
+            {
+                return (PlayerAction.Raise, raiseAmount);
+            }
         }
         else
         {
