@@ -8,9 +8,9 @@ class Program
     {
         Console.Title = "Poker Game";
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine("=== Texas Hold'em Poker ===\n");
+        Console.WriteLine("=== Poker ===\n");
 
-        // --- Setup players: 1 human, 3 bots ---
+        // Setup, anggap 1 player human dan 4 bot
         Console.Write("Enter your name: ");
         string playerName = Console.ReadLine();
         if (string.IsNullOrWhiteSpace(playerName)) playerName = "You";
@@ -25,19 +25,11 @@ class Program
         };
 
        
-        var deck = new List<ICard>();  // dummy, will be initialised inside Game?
+        var deck = new List<ICard>();  
         var board = new List<ICard>();
         var pot = new List<IPot>();
-        var game = new Game(players,  10, 20);
-        // But we already fixed Game to use its own deck/board creation? The constructor shown earlier is problematic.
-        // You need to modify the Game constructor to create its own deck and board, not accept them as parameters.
-        // I'll assume you have done that. For this example, let's use a corrected constructor:
-        // public Game(List<IPlayer> players, int smallBlind, int bigBlind)
-
-        // I'll rewrite a simple version assuming Game has been fixed. 
-        // For brevity, I'll show a typical console loop with the assumption that Game works.
-
-        // Subscribe to events for logging
+        var game = new Game(players,  10, 50);
+        
         game.OnPlayerActed += (player, action, amount) =>
         {
             Console.WriteLine($"{player.Name} {action}" + (amount > 0 ? $" {amount}" : ""));
@@ -82,23 +74,18 @@ class Program
             // Hand ended early or showdown
             if (game.IsGameEndedEarly())
             {
-                // One player left wins all pots
                 var winner = game.GetActivePlayers().First();
                 Console.WriteLine($"\nOnly {winner.Name} remains – they win!");
-                // Award all pots to that player
                 game.AwardPot();  
             }
             else
             {
-                // Showdown: award pots normally (GetWinners and AwardPot already handle splitting)
-                // But AwardPot must be called; it will distribute based on GetWinners().
-                // Ensure your AwardPot uses GetWinners() internally.
                 game.AwardPot();
             }
 
             // Remove players with zero chips
             var dead = game.GetPlayers().Where(p => game.GetTotalChips(p) == 0).ToList();
-            foreach (var d in dead) game.RemovePlayer(d);  // You need a RemovePlayer method
+            foreach (var d in dead) game.RemovePlayer(d);  
 
             Console.WriteLine("\nPress any key for next hand, or Q to quit...");
             if (Console.ReadKey(true).Key == ConsoleKey.Q) quit = true;
@@ -113,7 +100,7 @@ class Program
         int chips = game.GetTotalChips(player);
         Console.WriteLine($"\nYour turn: {player.Name} (chips: {chips})");
         Console.WriteLine($"Current bet to call: {toCall}");
-        Console.WriteLine("Actions: (f)old, (c)heck/call, (r)aise, (a)ll-in");
+        Console.WriteLine("Actions: (f)old, (c)all, (r)aise, (a)ll-in");
         Console.Write("Choose: ");
         string input = Console.ReadLine()?.ToLower();
 
@@ -164,15 +151,7 @@ class Program
 
         if (toCall == 0)
         {
-            // Can check or raise randomly
-            if (rand.Next(100) < 70)
-                return (PlayerAction.Check, 0);
-            else
-            {
-                int raise = Math.Min(chips, game.CurrentBetAmount + game.BigBlind);
-                if (raise < game.CurrentBetAmount) raise = game.CurrentBetAmount;
-                return (PlayerAction.Raise, raise);
-            }
+            return (PlayerAction.Check, 0);
         }
         else
         {
@@ -191,7 +170,7 @@ class Program
     static void RenderGameState(Game game)
     {
         Console.WriteLine("\n--- Game State ---");
-        Console.Write("Community: ");
+        Console.Write("Cards on Board: ");
         var board = game.GetBoardCards();
         if (board.Count == 0) Console.Write("(none)");
         else Console.WriteLine(string.Join(", ", board.Select(c => c.ToString())));

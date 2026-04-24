@@ -76,16 +76,25 @@ public class Game
 
     private List<IChip> AmountToChips(int amount)
     {
+        // var chips = new List<IChip>();
+        // int[] chipsValue = {500, 100, 50};
+        // foreach(int chipValue in chipsValue)
+        // {
+        //     while(amount>chipValue)
+        //     {
+        //         chips.Add(new Chip(chipValue, GetChipColorForValue(chipValue)));
+        //         amount -= chipValue;    
+        //     }
+        // }
+        // return chips;
         var chips = new List<IChip>();
-        int[] chipsValue = {5000, 1000, 500, 100, 50};
-        foreach(int chipValue in chipsValue)
-        {
-            while(amount>chipValue)
-            {
-                chips.Add(new Chip(chipValue, GetChipColorForValue(chipValue)));
-                amount -= chipValue;    
-            }
-        }
+        int smallestChipValue = 50;
+        if (amount % smallestChipValue != 0)
+            throw new ArgumentException("Amount must be multiple of smallest chip value (50)");
+        
+        int chipCount = amount / smallestChipValue;
+        for (int i = 0; i < chipCount; i++)
+            chips.Add(new Chip(smallestChipValue, GetChipColorForValue(smallestChipValue)));
         return chips;
     }
 
@@ -121,8 +130,6 @@ public class Game
     {
         switch (value)
         {
-            case 5000: return "Blue";
-            case 1000: return "Black";
             case 500: return "Green";
             case 100: return "Red";
             case 50: return "White";
@@ -200,7 +207,7 @@ public class Game
         int actualSmall = Math.Min(smallBlindAmount, GetTotalChips(smallBlindPlayer));
         if (actualSmall > 0)
         {
-            if (actualSmall < smallBlindAmount)  // not enough for full blind
+            if (actualSmall < smallBlindAmount) 
                 _playerAllIn[smallBlindPlayer] = true;
             PlaceBet(smallBlindPlayer, actualSmall);
         }
@@ -264,11 +271,11 @@ public class Game
     }
     public void Call(IPlayer player)  //Bet sesuai dengan jumlah bet dari lawan lainnya
     {
-        _playerCalled[player] = true;
+        
 
         int toCall = _currentBetAmount - _playerBets[player];
-        if (toCall <= 0)
-            throw new InvalidOperationException("No need to call, you can check.");
+        if (toCall <= 0)return;
+            // throw new InvalidOperationException("No need to call, you can check.");
         
         int chips = GetTotalChips(player);
         if (chips < toCall)
@@ -676,7 +683,7 @@ public class Game
             // But after removal, ensure the game still works.
         }
     }
-    // public void DecideBotAction(IPlayer bot)
+    
 
     public void HandleAction(IPlayer player, PlayerAction action, int amount)
     {
@@ -709,6 +716,55 @@ public class Game
 
         // Advance to the next player (you need to implement this logic)
         SwitchTurn();
+    }
+
+    public (PlayerAction action, int amount) DecideBotAction(IPlayer bot)
+    {
+        int chips = GetTotalChips(bot);
+        int toCall = _currentBetAmount - _playerBets[bot];
+        Random rand = new Random();
+
+        
+        if (toCall == 0)
+        {
+            
+            int raiseAmount = _currentBetAmount + BigBlind;
+            if (raiseAmount > chips)
+            {
+                
+                return (PlayerAction.AllIn, chips);
+            }
+            else
+            {
+                return (PlayerAction.Raise, raiseAmount);
+            }
+        }
+        else // There is a bet to call
+        {
+            // If cannot call, go all-in or fold
+            if (chips < toCall)
+            {
+                if (chips > 0)
+                    return (PlayerAction.AllIn, chips);
+                else
+                    return (PlayerAction.Fold, 0);
+            }
+
+            // Can call: random decision (40% fold, 40% call, 20% raise)
+            int r = rand.Next(100);
+            if (r < 40)
+                return (PlayerAction.Fold, 0);
+            else if (r < 80)
+                return (PlayerAction.Call, toCall);
+            else
+            {
+                // Raise amount: current bet plus something
+                int raiseTo = _currentBetAmount + BigBlind;
+                if (raiseTo > chips) raiseTo = chips;
+                if (raiseTo <= _currentBetAmount) return (PlayerAction.Call, toCall);
+                return (PlayerAction.Raise, raiseTo);
+            }
+        }
     }
 }
 
