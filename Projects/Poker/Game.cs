@@ -140,7 +140,7 @@ public class Game
     public void InitializeDeck()
     {
         if (_deck == null) _deck = new List<ICard>();
-        _deck.Clear();  // assuming _deck is IDeck with a List<ICard> property
+        _deck.Clear();
         foreach (Suit suit in Enum.GetValues(typeof(Suit)))
         {
             foreach (Rank rank in Enum.GetValues(typeof(Rank)))
@@ -158,6 +158,11 @@ public class Game
         Random rng = new Random();
         int totalCards = deck.Count;
 
+        for(int i = totalCards - 1; i > 0; i--)
+        {
+            int j = rng.Next(i+1);
+            (deck[i], deck[j]) = (deck[j], deck[i]);
+        }
         for(int i = totalCards - 1; i > 0; i--)
         {
             int j = rng.Next(i+1);
@@ -570,7 +575,7 @@ public class Game
         {
             if (pot.Amount == 0) continue;
             
-            // Determine winners among players eligible for this pot
+ 
             var eligibleWinners = GetWinners().Where(w => pot.EligiblePlayers.Contains(w)).ToList();
             if (eligibleWinners.Count == 0) continue;
             
@@ -672,15 +677,13 @@ public class Game
         if (_players.Contains(player))
         {
             _players.Remove(player);
-            // Also remove any dictionaries entries if needed (optional, but clean)
+
             _playerHands.Remove(player);
             _playerChips.Remove(player);
             _playerBets.Remove(player);
             _playerFolded.Remove(player);
             _playerAllIn.Remove(player);
-            // Recalculate indices if the removed player affects dealer/blind positions
-            // For simplicity, you can just recalc positions when starting next hand.
-            // But after removal, ensure the game still works.
+
         }
     }
     
