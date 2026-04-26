@@ -20,7 +20,7 @@ public class Game
     private int _smallBlindIndex {get; set;}
     private int _bigBlindIndex {get; set;}
     private int _currentPlayerIndex {get; set;}
-    public int _currentBetAmount{get; set;}
+    private int _currentBetAmount{get; set;}
     
 
     public int SmallBlind{get; set;}
@@ -32,17 +32,24 @@ public class Game
 
     public int CurrentBetAmount => _currentBetAmount;
     public GamePhase Phase => _phase;
+
+    public List<ICard> GetBoard() => _board;
+    public GamePhase GetPhase() => _phase;
+    public IPlayer GetCurrentPlayer() => _players[_currentPlayerIndex];
+    public IPlayer GetSBlindPlayer() => _players[_smallBlindIndex];
+    public IPlayer GetBBlindPlayer() => _players[_bigBlindIndex];
+    public Dictionary<IPlayer, List<ICard>> GetPlayerHands() => _playerHands;
     
 
 
-    public Game(List<IPlayer> players, int smallBlind, int bigBlind)
+    public Game(List<IPlayer> players, List<ICard> board, List<ICard> deck, List<IPot> pot, int smallBlind, int bigBlind)
     {
         _players = players ?? new List<IPlayer>();;
-        _deck = new List<ICard>();
-        _board = new List<ICard>();
+        _deck = deck;
+        _board = board;
         SmallBlind = smallBlind;
         BigBlind = bigBlind;
-        _pots = new List<IPot>();
+        _pots = pot;
         _pots.Add(new Pot(_players.ToList(), 0));
         
         _playerHands = new Dictionary<IPlayer, List<ICard>>();
@@ -51,15 +58,15 @@ public class Game
         _playerFolded = new Dictionary<IPlayer, bool>();
         _playerAllIn = new Dictionary<IPlayer, bool>();
 
-        Random rng = new Random();
-        _dealerIndex = rng.Next(0, players.Count);
+        Random random = new Random();
+        _dealerIndex = random.Next(0, players.Count);
         _smallBlindIndex = (_dealerIndex + 1) % players.Count();
         _bigBlindIndex = (_dealerIndex + 2) % players.Count();
 
         foreach(var p in players)
         {
             _playerHands[p] = new List<ICard>();
-            _playerChips[p] = AmountToChips(1000);   
+            _playerChips[p] = AmountToChips(1000);
             _playerBets[p] = 0;
             _playerFolded[p] = false;
             _playerAllIn[p] = false;
@@ -72,7 +79,7 @@ public class Game
     private List<IChip> AmountToChips(int amount)
     {
         var chips = new List<IChip>();
-        int smallestChipValue = 50;
+        int smallestChipValue = 10;
         // if (amount % smallestChipValue != 0)
         //     throw new ArgumentException("Amount must be multiple of smallest chip value (50)");
         
@@ -87,7 +94,7 @@ public class Game
         return chips.Sum(c => c.Value);
     }
 
-    private List<IChip> RemoveChipsForBet(List<IChip> playerChips, int betAmount)
+    private void RemoveChipsForBet(List<IChip> playerChips, int betAmount)
     {
         var sorted = playerChips.OrderByDescending(c => c.Value).ToList();
         var toRemove = new List<IChip>();
@@ -102,21 +109,19 @@ public class Game
                 remaining -= chip.Value;
             }
         }
-        // if(remaining > 0)
-        // {
-        //     throw new InvalidOperationException("Player doesn't have enough chips to bet!!");
-        // }
+
         foreach(var chip in toRemove)playerChips.Remove(chip);
-        return toRemove;
+        // return toRemove;
     }
 
     private string GetChipColorForValue(int value)
     {
         switch (value)
         {
-            case 500: return "Green";
-            case 100: return "Red";
-            case 50: return "White";
+            case 500: return "Black";
+            case 100: return "Green";
+            case 50: return "Red";
+            case 10: return "White";
             default: return "Unknown";
         }
     }
@@ -134,6 +139,7 @@ public class Game
         ShuffleDeck(_deck);
         }
     }
+
 
     public void ShuffleDeck(List<ICard> deck)
     {   
@@ -180,7 +186,7 @@ public class Game
         _board.Clear();
     }
 
-    private void PostBlinds()
+    public void PostBlinds()
     { 
         IPlayer smallBlindPlayer = _players[_smallBlindIndex];
         IPlayer bigBlindPlayer = _players[_bigBlindIndex];
@@ -197,7 +203,6 @@ public class Game
         }
         else
         {
-        
             Fold(smallBlindPlayer);
         }
 
@@ -207,7 +212,7 @@ public class Game
         if (actualBig > 0)
         {
             if (actualBig < bigBlindAmount)  // not enough for full blind
-                _playerAllIn[bigBlindPlayer] = true;
+            _playerAllIn[bigBlindPlayer] = true;
             PlaceBet(bigBlindPlayer, actualBig);
             
             _currentBetAmount = actualBig;
@@ -217,7 +222,6 @@ public class Game
             Fold(bigBlindPlayer);
         }
     }
-
     public void DealHoleCards() // Bagi 2 kartu ke masing-masing player
     {
         int i = 0;
@@ -230,6 +234,8 @@ public class Game
             i++;
         }
     }
+    
+
     //Buka 3 kartu pertama diatas board (3 kartu pertama diperlihatkan)
     public void DealFlop() => AddCardToBoard(_board, GamePhase.Flop);
     //Buka kartu ke-4 diatas board
@@ -244,6 +250,8 @@ public class Game
         else if(_phase == GamePhase.Flop) _phase = GamePhase.Turn;
         else if(_phase == GamePhase.Turn) _phase = GamePhase.River;
         else if(_phase == GamePhase.River) _phase = GamePhase.Showdown;
+
+        ResetBettingRound();
 
         OnPhaseChanged.Invoke(_phase);
     }
@@ -271,14 +279,8 @@ public class Game
         PlaceBet(player, toCall);
     }
     public void Raise(IPlayer player, int raiseToTotal) // Player naikin jumlah bet 
-    {
-        // raiseToTotal -> total jumlah bet baru (termasuk jumlah bet saat ini)
-        if (raiseToTotal <= _currentBetAmount)
-            throw new InvalidOperationException("Raise must be higher than current bet.");
-        
+    {   
         int additional = raiseToTotal - _playerBets[player];
-        if (additional <= 0)
-            throw new InvalidOperationException("Raise amount must be positive.");
         
         int chips = GetTotalChips(player);
         if (chips < additional)
@@ -293,8 +295,6 @@ public class Game
     }
     public void Check(IPlayer player) //Skip turn untuk sementara (tidak bet, tapi tidak fold). Hanya berlaku jika bet masih bernilai 0
     {
-        if (_currentBetAmount != 0) throw new InvalidOperationException("Cannot check – there is a bet to call.");
-
     }
     public void AllIn(IPlayer player) //Player bet semua chip yang dipunya...
     {
@@ -595,8 +595,19 @@ public class Game
             _playerFolded[p] = false;
             _playerAllIn[p] = false;
         }
-              
+        ResetBettingRound();
+        DealHoleCards();
+        PostBlinds();
+
     }
+    private void ResetBettingRound()
+    {
+        _currentBetAmount = 0;
+        foreach (var p in _players)
+        {
+            _playerBets[p] = 0;
+        }
+    }  
 
     public List<ICard> GetHand(IPlayer player)
     {
@@ -637,16 +648,9 @@ public class Game
         }
     return true;
     }
-
-
-
-
-    
-    public IPlayer GetCurrentPlayer() => _players[_currentPlayerIndex];
-    public List<ICard> GetBoardCards() => _board;
     public int GetTotalPot() => _pots.Sum(p => p.Amount);
     public int GetPlayerBet(IPlayer player) => _playerBets[player];
-    public bool IsPlayerAllIn(IPlayer player) => _playerAllIn[player];
+    
     public List<IPlayer> GetActivePlayers() => _players.Where(p => !_playerFolded[p]).ToList();
     public List<IPlayer> GetPlayers() => _players.ToList();
 
@@ -665,10 +669,8 @@ public class Game
         }
     }
     
-
     public void HandleAction(IPlayer player, PlayerAction action, int amount)
     {
-       
         if (_playerFolded[player] || _playerAllIn[player]) return;
 
         switch (action)
@@ -689,9 +691,8 @@ public class Game
                 AllIn(player);
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(action), "Invalid action");
+                break;
         }
-
         // After the action, raise the event
         OnPlayerActed?.Invoke(player, action, amount);
 
@@ -704,11 +705,8 @@ public class Game
         int chips = GetTotalChips(bot);
         int toCall = _currentBetAmount - _playerBets[bot];
         Random rand = new Random();
-
-        
         if (toCall == 0)
         {
-            
             int raiseAmount = _currentBetAmount + BigBlind;
             if (raiseAmount > chips)
             {
