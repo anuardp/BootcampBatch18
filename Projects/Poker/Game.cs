@@ -412,11 +412,11 @@ public class Game
         }
         return bestStrength;
     }
-    private int CompareHandStrength(HandStrength a, HandStrength b)
+    private int CompareHandStrength(HandStrength handOne, HandStrength handTwo)
     {
-        if (a == null && b == null) return 0;
-        if (a == null) return -1;
-        if (b == null) return 1;
+        if (handOne== null && handTwo == null) return 0;
+        if (handOne == null) return -1;
+        if (handTwo == null) return 1;
 
         if (a.Rank != b.Rank)
             return a.Rank.CompareTo(b.Rank);
@@ -429,7 +429,6 @@ public class Game
         }
         return 0;
     }
-
     public HandStrength EvaluateFiveCardHand(List<ICard> fiveCards)
     {
         // Urut kartu dari rank tertinggi (Ace dianggap paling tinggi)
@@ -555,13 +554,29 @@ public class Game
 
     public List<IPlayer> GetWinnersOnRound() => GetWinners();
 
+    public List<ICard> GetBestFiveCards(IPlayer player)
+{
+    var allCards = _playerHands[player].Concat(_board).ToList();
+    var combinations = GetAllFiveCardCombinations(allCards);
+    HandStrength bestStrength = null;
+    List<ICard> bestCombo = null;
+    foreach (var five in combinations)
+    {
+        var strength = EvaluateFiveCardHand(five);
+        if (bestStrength == null || CompareHandStrength(strength, bestStrength) > 0)
+        {
+            bestStrength = strength;
+            bestCombo = five;
+        }
+    }
+    return bestCombo ?? new List<ICard>();
+}
+
     public void AwardPot()
     {
         foreach (var pot in _pots)
         {
             if (pot.Amount == 0) continue;
-            
- 
             var eligibleWinners = GetWinners().Where(w => pot.EligiblePlayers.Contains(w)).ToList();
             if (eligibleWinners.Count == 0) continue;
             

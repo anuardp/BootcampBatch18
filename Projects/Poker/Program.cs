@@ -26,7 +26,7 @@ class Program
             List<IPot> pots = new List<IPot>();
             Game game = new Game(players, board, deck, pots, 10, 20);
 
-            // Events hanya untuk log, tidak untuk render ulang (agar tidak konflik)
+            
             game.OnPlayerActed += (player, action, amount) =>
             {
                 Console.WriteLine($"{player.Name} {action}" + (amount > 0 ? $" {amount}" : ""));
@@ -105,7 +105,7 @@ class Program
                 game.HandleAction(currentPlayer, action, amount);
             }
 
-            // Setelah aksi, render ulang agar chip dan bet terupdate (opsional, karena loop akan render lagi)
+           
             RenderGameState(game, game.GetCurrentPlayer());
 
             if (game.IsBettingRoundOver())
@@ -121,7 +121,7 @@ class Program
                 if (game.Phase != GamePhase.Showdown)
                 {
                     Console.WriteLine($"\n*** {game.Phase} ***");
-                    RenderGameState(game, null); // tampilkan board baru
+                    RenderGameState(game, null); 
                 }
             }
         }
@@ -135,7 +135,7 @@ class Program
             if (winner != null)
                 Console.WriteLine($"\nOnly {winner.Name} remains. They win the pot!");
         }
-        
+
         game.AwardPot();
         var dead = game.GetPlayers().Where(p => game.GetTotalChips(p) == 0).ToList();
         foreach (var d in dead)
@@ -184,7 +184,7 @@ class Program
                         Console.WriteLine($"Raise must be higher than current bet ({game.CurrentBetAmount}). Try again.");
                         continue;
                     }
-                    // Valid, keluar loop
+                    
                     break;
                 }
                 break;
@@ -239,19 +239,30 @@ class Program
     static void RenderShowdown(Game game)
     {
         Console.WriteLine("\n--- SHOWDOWN ---");
-        var activePlayers = game.GetActivePlayers(); // yang tidak fold
+        var activePlayers = game.GetActivePlayers();
         foreach (var player in activePlayers)
         {
             var hand = game.GetHand(player);
+            var bestFive = game.GetBestFiveCards(player);
             var strength = game.EvaluateHand(player);
-            Console.WriteLine($"{player.Name}'s hand: [{hand[0].Suit}{hand[0].Rank}] [{hand[1].Suit}{hand[1].Rank}] => {strength.Rank}");
-            // optional: tampilkan tie breakers jika perlu
-            // Console.WriteLine($"   Tie breakers: {string.Join(", ", strength.TieBreakers)}");
+            Console.Write($"{player.Name}'s hand: {strength.Rank}");
+            if (bestFive != null && bestFive.Count == 5)
+            {
+                Console.Write($" (Best 5: {string.Join(" ", bestFive.Select(c => $"[{c.Suit}{c.Rank}]"))})");
+            }
+            Console.WriteLine();
         }
         var winners = game.GetWinnersOnRound();
+        int totalPot = game.GetTotalPot();
+        int numWinners = winners.Count;
+        int share = totalPot / numWinners;
+        int remainder = totalPot % numWinners;
         Console.Write("\nWinner(s): ");
-        foreach (var w in winners)
-            Console.Write($"{w.Name} ");
+        for (int i = 0; i < winners.Count; i++)
+        {
+            int winnings = share + (i == 0 ? remainder : 0);
+            Console.Write($"{winners[i].Name} (won {winnings} chips) ");
+        }
         Console.WriteLine();
-    }
+        }
 }
