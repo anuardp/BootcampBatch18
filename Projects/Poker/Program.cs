@@ -1,4 +1,4 @@
-﻿/using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -125,7 +125,17 @@ class Program
                 }
             }
         }
-
+        if (game.Phase == GamePhase.Showdown)
+        {
+            RenderShowdown(game);
+        }
+        else if (game.IsGameEndedEarly())
+        {
+            var winner = game.GetActivePlayers().FirstOrDefault();
+            if (winner != null)
+                Console.WriteLine($"\nOnly {winner.Name} remains. They win the pot!");
+        }
+        
         game.AwardPot();
         var dead = game.GetPlayers().Where(p => game.GetTotalChips(p) == 0).ToList();
         foreach (var d in dead)
@@ -224,5 +234,24 @@ class Program
         }
         Console.WriteLine($"Pot: {game.GetTotalPot()}");
         Console.WriteLine("------------------");
+    }
+
+    static void RenderShowdown(Game game)
+    {
+        Console.WriteLine("\n--- SHOWDOWN ---");
+        var activePlayers = game.GetActivePlayers(); // yang tidak fold
+        foreach (var player in activePlayers)
+        {
+            var hand = game.GetHand(player);
+            var strength = game.EvaluateHand(player);
+            Console.WriteLine($"{player.Name}'s hand: [{hand[0].Suit}{hand[0].Rank}] [{hand[1].Suit}{hand[1].Rank}] => {strength.Rank}");
+            // optional: tampilkan tie breakers jika perlu
+            // Console.WriteLine($"   Tie breakers: {string.Join(", ", strength.TieBreakers)}");
+        }
+        var winners = game.GetWinnersOnRound();
+        Console.Write("\nWinner(s): ");
+        foreach (var w in winners)
+            Console.Write($"{w.Name} ");
+        Console.WriteLine();
     }
 }

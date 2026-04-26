@@ -316,6 +316,12 @@ public class Game
 
         int remaining = addChips;
 
+        if (_pots.Count == 1 && !_players.Any(p => _playerAllIn[p]))
+        {
+            _pots[0].Amount += addChips;
+            return;
+        }
+
         for (int i = 0; i < _pots.Count && remaining > 0; i++)
         {
             IPot pot = _pots[i];
@@ -546,6 +552,8 @@ public class Game
         }
         return winners;
     }
+
+    public List<IPlayer> GetWinnersOnRound() => GetWinners();
 
     public void AwardPot()
     {
