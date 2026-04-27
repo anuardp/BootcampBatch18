@@ -287,9 +287,9 @@ public class Game
         PlaceBet(player, additional);
         _currentBetAmount = raiseToTotal;
     }
-    public void Check(IPlayer player)
-    {
-    }
+    // public void Check(IPlayer player)
+    // {
+    // }
     public void AllIn(IPlayer player) //Player bet semua chip yang dipunya...
     {
         int allInAmount = GetTotalChips(player);
@@ -695,9 +695,9 @@ public class Game
             case PlayerAction.Fold:
                 Fold(player);
                 break;
-            case PlayerAction.Check:
-                Check(player);
-                break;
+            // case PlayerAction.Check:
+            //     Check(player);
+            //     break;
             case PlayerAction.Call:
                 Call(player);
                 break;
