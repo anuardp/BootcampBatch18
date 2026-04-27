@@ -26,7 +26,6 @@ class Program
             List<IPot> pots = new List<IPot>();
             Game game = new Game(players, board, deck, pots, 10, 20);
 
-            
             game.OnPlayerActed += (player, action, amount) =>
             {
                 Console.WriteLine($"{player.Name} {action}" + (amount > 0 ? $" {amount}" : ""));
@@ -68,8 +67,8 @@ class Program
         Console.Clear();
         Console.WriteLine("--------------------Poker--------------------");
         Console.Write("\nNumber of human players: ");
-        int totalHumanPlayer = int.Parse(Console.ReadLine() ?? "1");
-        var players = new List<IPlayer>();
+        int totalHumanPlayer = Convert.ToInt32(Console.ReadLine());
+        List<IPlayer> players = new List<IPlayer>();
         for (int i = 0; i < totalHumanPlayer; i++)
         {
             Console.Write($"Enter Player {i + 1} name: ");
@@ -133,7 +132,7 @@ class Program
         }
         else if (game.IsGameEndedEarly())
         {
-            var winner = game.GetActivePlayers().FirstOrDefault();
+            IPlayer? winner = game.GetActivePlayers().FirstOrDefault();
             if (winner != null)
                 Console.WriteLine($"\nOnly {winner.Name} remains. They win the pot!");
         }
@@ -156,7 +155,6 @@ class Program
 
         PlayerAction action;
         int amount = 0;
-
         switch (input)
         {
             case "f":
@@ -216,14 +214,14 @@ class Program
             Console.Write($"{CardTranslate(board[0])} {CardTranslate(board[1])} {CardTranslate(board[2])} {CardTranslate(board[3])} [Xx]");
         else if (board.Count == 5)
             Console.Write($"{CardTranslate(board[0])} {CardTranslate(board[1])} {CardTranslate(board[2])} {CardTranslate(board[3])} {CardTranslate(board[4])}");
-        Console.WriteLine();
+        Console.WriteLine("\n");
 
         //Human turn 
         if (currentPlayer != null && currentPlayer is Player p && p.Type == "human")
         {
             var hand = game.GetHand(currentPlayer);
             if (hand.Count == 2)
-                Console.WriteLine($"Your hand:\n{CardTranslate(hand[0])} {CardTranslate(hand[1])})");
+                Console.WriteLine($"\nYour hand:\n{CardTranslate(hand[0])} {CardTranslate(hand[1])})\n");
         }
 
         // Tampilkan semua pemain beserta chip dan bet terupdate
@@ -288,4 +286,6 @@ class Program
         };
         return $"[{rank}{suit}]";
     }
+
+    static 
 }

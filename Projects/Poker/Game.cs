@@ -234,7 +234,7 @@ public class Game
     
 
     //Buka 3 kartu pertama diatas board (3 kartu pertama diperlihatkan)
-    public void DealFlop() => AddCardToBoard(_board, GamePhase.Flop);
+    public void DealFlop() { AddCardToBoard(_board, GamePhase.Flop);}
     //Buka kartu ke-4 diatas board
     public void DealTurn() => AddCardToBoard(_board, GamePhase.Turn);
     //Buka kartu ke-5 diatas board
@@ -735,7 +735,7 @@ public class Game
                 return (PlayerAction.Raise, raiseAmount);
             }
         }
-        else // There is a bet to call
+        else 
         {
             // If cannot call, go all-in or fold
             if (chips < toCall)
