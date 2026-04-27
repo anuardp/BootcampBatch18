@@ -75,13 +75,10 @@ public class Game
             _phase = GamePhase.PreFlop;
         }
     }
-
     private List<IChip> AmountToChips(int amount)
     {
         var chips = new List<IChip>();
         int smallestChipValue = 10;
-        // if (amount % smallestChipValue != 0)
-        //     throw new ArgumentException("Amount must be multiple of smallest chip value (50)");
         
         int chipCount = amount / smallestChipValue;
         for (int i = 0; i < chipCount; i++)
@@ -264,10 +261,7 @@ public class Game
     {
         
 
-        int toCall = _currentBetAmount - _playerBets[player];
-        if (toCall <= 0)return;
-            // throw new InvalidOperationException("No need to call, you can check.");
-        
+        int toCall = _currentBetAmount - _playerBets[player];        
         int chips = GetTotalChips(player);
         if (chips < toCall)
         {
@@ -293,7 +287,7 @@ public class Game
         PlaceBet(player, additional);
         _currentBetAmount = raiseToTotal;
     }
-    public void Check(IPlayer player) //Skip turn untuk sementara (tidak bet, tapi tidak fold). Hanya berlaku jika bet masih bernilai 0
+    public void Check(IPlayer player)
     {
     }
     public void AllIn(IPlayer player) //Player bet semua chip yang dipunya...
@@ -355,7 +349,7 @@ public class Game
         if (potIndex < distinctBets.Count)
             return distinctBets[potIndex];
         else
-            return distinctBets.Last(); // fallback (should not happen)
+            return distinctBets.Last(); 
     }
    
     public void UpdatePotEligibility()
@@ -418,14 +412,14 @@ public class Game
         if (handOne == null) return -1;
         if (handTwo == null) return 1;
 
-        if (a.Rank != b.Rank)
-            return a.Rank.CompareTo(b.Rank);
+        if (handOne.Rank != handTwo.Rank)
+            return handOne.Rank.CompareTo(handTwo.Rank);
 
         //Rank sama, cek dari tie-breakernya
-        for (int i = 0; i < a.TieBreakers.Count && i < b.TieBreakers.Count; i++)
+        for (int i = 0; i < handOne.TieBreakers.Count && i < handTwo.TieBreakers.Count; i++)
         {
-            if (a.TieBreakers[i] != b.TieBreakers[i])
-                return a.TieBreakers[i].CompareTo(b.TieBreakers[i]);
+            if (handOne.TieBreakers[i] != handTwo.TieBreakers[i])
+                return handOne.TieBreakers[i].CompareTo(handTwo.TieBreakers[i]);
         }
         return 0;
     }
@@ -467,8 +461,8 @@ public class Game
         if (firstCount == 4)
         {
             handRank = HandRank.FourOfAKind;
-            tieBreakers.Add((Rank)rankGroups[0].Key); // the four-of-a-kind rank
-            tieBreakers.Add((Rank)rankGroups[1].Key); // the kicker
+            tieBreakers.Add((Rank)rankGroups[0].Key); // four of a kind
+            tieBreakers.Add((Rank)rankGroups[1].Key); // 1 kartu sisanya
         }
         // Full house
         else if (firstCount == 3 && secondCount == 2)
@@ -533,7 +527,7 @@ public class Game
     private List<IPlayer> GetWinners()
     {
         List<IPlayer> winners = new List<IPlayer>();
-        HandStrength bestStrength = null;
+        HandStrength? bestStrength = null;
 
         foreach (var player in _players.Where(p => !_playerFolded[p]))
         {
@@ -555,22 +549,22 @@ public class Game
     public List<IPlayer> GetWinnersOnRound() => GetWinners();
 
     public List<ICard> GetBestFiveCards(IPlayer player)
-{
-    var allCards = _playerHands[player].Concat(_board).ToList();
-    var combinations = GetAllFiveCardCombinations(allCards);
-    HandStrength bestStrength = null;
-    List<ICard> bestCombo = null;
-    foreach (var five in combinations)
     {
-        var strength = EvaluateFiveCardHand(five);
-        if (bestStrength == null || CompareHandStrength(strength, bestStrength) > 0)
+        var allCards = _playerHands[player].Concat(_board).ToList();
+        var combinations = GetAllFiveCardCombinations(allCards);
+        HandStrength? bestStrength = null;
+        List<ICard>? bestCombo = null;
+        foreach (var five in combinations)
         {
-            bestStrength = strength;
-            bestCombo = five;
+            var strength = EvaluateFiveCardHand(five);
+            if (bestStrength == null || CompareHandStrength(strength, bestStrength) > 0)
+            {
+                bestStrength = strength;
+                bestCombo = five;
+            }
         }
+        return bestCombo ?? new List<ICard>();
     }
-    return bestCombo ?? new List<ICard>();
-}
 
     public void AwardPot()
     {

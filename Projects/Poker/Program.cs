@@ -14,7 +14,7 @@ class Program
         {
             Console.Clear();
             GameHomeUIHeader();
-            Console.Write("\nThere's only 2 options.. No need to complicate yourself!!\n\nSelect Menu: ");
+            Console.Write("\nThere's only 2 options!!\n\nSelect Menu: ");
             option = Console.ReadLine();
         }
         if (option == "1")
@@ -45,7 +45,11 @@ class Program
             if (game.GetPlayers().Count <= 1)
                 Console.WriteLine("\nGame over! Only one player remains.");
             else
+            {
+                Console.Clear();
                 Console.WriteLine("\nThanks for playing!");
+                Main();
+            }
         }
         else
         {
@@ -92,7 +96,7 @@ class Program
         while (!game.IsGameEndedEarly() && game.Phase != GamePhase.Showdown)
         {
             IPlayer currentPlayer = game.GetCurrentPlayer();
-            RenderGameState(game, currentPlayer);   // tampilkan state sebelum aksi
+            RenderGameState(game, currentPlayer);   
 
             if (currentPlayer is Player p && p.Type == "human")
             {
@@ -105,9 +109,7 @@ class Program
                 game.HandleAction(currentPlayer, action, amount);
             }
 
-           
             RenderGameState(game, game.GetCurrentPlayer());
-
             if (game.IsBettingRoundOver())
             {
                 if (game.Phase == GamePhase.PreFlop)
@@ -204,24 +206,24 @@ class Program
     static void RenderGameState(Game game, IPlayer? currentPlayer)
     {
         Console.WriteLine("\n--- Game State ---");
-        Console.Write("Cards on Board: ");
+        Console.Write("Cards on Board: \n");
         var board = game.GetBoard();
         if (board.Count == 0)
             Console.Write("[Xx] [Xx] [Xx] [Xx] [Xx]");
         else if (board.Count == 3)
-            Console.Write($"[{board[0].Suit}{board[0].Rank}] [{board[1].Suit}{board[1].Rank}] [{board[2].Suit}{board[2].Rank}] [Xx] [Xx]");
+            Console.Write($"{CardTranslate(board[0])} {CardTranslate(board[1])} {CardTranslate(board[2])} [Xx] [Xx]");
         else if (board.Count == 4)
-            Console.Write($"[{board[0].Suit}{board[0].Rank}] [{board[1].Suit}{board[1].Rank}] [{board[2].Suit}{board[2].Rank}] [{board[3].Suit}{board[3].Rank}] [Xx]");
+            Console.Write($"{CardTranslate(board[0])} {CardTranslate(board[1])} {CardTranslate(board[2])} {CardTranslate(board[3])} [Xx]");
         else if (board.Count == 5)
-            Console.Write($"[{board[0].Suit}{board[0].Rank}] [{board[1].Suit}{board[1].Rank}] [{board[2].Suit}{board[2].Rank}] [{board[3].Suit}{board[3].Rank}] [{board[4].Suit}{board[4].Rank}]");
+            Console.Write($"{CardTranslate(board[0])} {CardTranslate(board[1])} {CardTranslate(board[2])} {CardTranslate(board[3])} {CardTranslate(board[4])}");
         Console.WriteLine();
 
-        // Tampilkan hand hanya untuk pemain yang sedang giliran (jika human)
+        //Human turn 
         if (currentPlayer != null && currentPlayer is Player p && p.Type == "human")
         {
             var hand = game.GetHand(currentPlayer);
             if (hand.Count == 2)
-                Console.WriteLine($"Your hand: [{hand[0].Suit}{hand[0].Rank}] [{hand[1].Suit}{hand[1].Rank}]");
+                Console.WriteLine($"Your hand:\n{CardTranslate(hand[0])} {CardTranslate(hand[1])})");
         }
 
         // Tampilkan semua pemain beserta chip dan bet terupdate
@@ -248,7 +250,7 @@ class Program
             Console.Write($"{player.Name}'s hand: {strength.Rank}");
             if (bestFive != null && bestFive.Count == 5)
             {
-                Console.Write($" (Best 5: {string.Join(" ", bestFive.Select(c => $"[{c.Suit}{c.Rank}]"))})");
+                Console.Write($" (Best 5: {string.Join(" ", bestFive.Select(c => $"{CardTranslate(c)}"))})");
             }
             Console.WriteLine();
         }
@@ -264,5 +266,26 @@ class Program
             Console.Write($"{winners[i].Name} (won {winnings} chips) ");
         }
         Console.WriteLine();
-        }
+    }
+    static string CardTranslate(ICard card)
+    {
+        string suit = card.Suit switch
+        {
+            Suit.Hearts   => "♥",
+            Suit.Diamonds => "♦",
+            Suit.Clubs    => "♣",
+            Suit.Spades   => "♠",
+            _             => "?"
+        };
+        string rank = card.Rank switch
+        {
+            Rank.Ace   => "A",
+            Rank.King  => "K",
+            Rank.Queen => "Q",
+            Rank.Jack  => "J",
+            Rank.Ten   => "10",
+            _          => ((int)card.Rank).ToString()
+        };
+        return $"[{rank}{suit}]";
+    }
 }
