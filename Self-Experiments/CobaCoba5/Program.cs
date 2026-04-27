@@ -22,14 +22,23 @@
 
 Panel panel = new Panel("");
 
-
+string testKartu = "3    \n♣    \n    ♣\n    3";
 string kartu ="10   \n♠    \n    ♠\n   10";
 string kartu2 ="2    \n♦    \n    ♦\n    2";
+string kartuTutup = "/////\n/////\n/////\n/////";
+Panel cardTest= new Panel($"[black on white]{testKartu}[/]").Padding(0,0,0,0).Border(BoxBorder.Rounded);
 Panel card = new Panel(new Markup($"[black on white]{kartu}[/]")).Padding(0,0,0,0).Border(BoxBorder.Rounded);
 Panel card2 = new Panel(new Markup($"[red on white]{kartu2}[/]")).Padding(0,0,0,0).Border(BoxBorder.Rounded);
-// AnsiConsole.Write(card);
-// Console.WriteLine();
-// AnsiConsole.Write(card2);
+Panel closedCard = new Panel(new Markup($"[white on black]{kartuTutup}[/]")).Padding(0,0,0,0).Border(BoxBorder.Rounded);
+
+
+
+AnsiConsole.Write(cardTest);
+Console.WriteLine();
+AnsiConsole.Write(closedCard);
+Console.WriteLine();
+
+
 
 //    Panel panel1 = new Panel();
 //    TextBox textBox1 = new TextBox();
@@ -60,7 +69,7 @@ Columns columns = new Columns(
     new Panel("Second column"),
     new Panel("Third column"));
 
-Grid grid = new Grid();
+
 
 
 Columns cards = new Columns(
@@ -68,12 +77,21 @@ Columns cards = new Columns(
     card2
 )
 {
-    Padding = new Padding(2,0,2,0),
+    Padding = new Padding(0,0,0,0),
     Expand = false
 };
-grid.AddColumn(new GridColumn {Width = 20});
-grid.AddColumn(new GridColumn {Width = 20});
-grid.AddColumn(new GridColumn {Width = 20});
+
+Columns testCards = new Columns(
+    cardTest,
+    closedCard
+)
+{
+    Padding = new Padding(0,0,0,0),
+    Expand = false
+};
+// grid.AddColumn(new GridColumn {Width = 20});
+// grid.AddColumn(new GridColumn {Width = 20});
+// grid.AddColumn(new GridColumn {Width = 20});
 
 AnsiConsole.Write(cards);
 
@@ -88,8 +106,8 @@ AnsiConsole.Write(
 // Panel card = new Panel(new Markup($"[black on white]{kartu}[/]")).Padding(0,0,0,0).Border(BoxBorder.None);
 
 string table = "";
-int w = 80;
-int h = 24;
+int w = 60;
+int h = 18;
 
 while (h > 0)
 {
@@ -107,3 +125,46 @@ while (h > 0)
 
 Panel pokerTable = new Panel(new Markup($"[on green]{table}[/]")).Padding(0,0,0,0).Border(BoxBorder.None);
 AnsiConsole.Write(new Align(pokerTable, HorizontalAlignment.Center));
+AnsiConsole.Write(
+    new Align(cards, HorizontalAlignment.Center)
+);
+
+//Gabungin meja dengan kartu
+
+
+Rows mixedTableAndCards = new Rows(testCards, pokerTable).Expand();
+
+AnsiConsole.Write(
+    new Align(new Panel(mixedTableAndCards), HorizontalAlignment.Center)
+);
+
+
+
+
+Grid grid = new Grid();
+
+grid.AddColumn(new GridColumn { Width = 20, Alignment = Justify.Right });
+grid.AddColumn(new GridColumn());
+
+grid.AddRow(
+    new Text("System Information", new Style(Color.Yellow, decoration: Decoration.Bold)),
+    new Text(""));
+  
+grid.AddEmptyRow();
+  
+// Add data rows
+grid.AddRow(new Markup("OS:"), new Markup("[blue]Linux[/]"));
+grid.AddRow(new Markup("CPU:"), new Markup("[green]8 cores @ 3.2GHz[/]"));
+grid.AddRow(
+    new Markup("Memory:"),
+    new BreakdownChart()
+        .Width(40)
+        .AddItem("Used", 12, Color.Red)
+        .AddItem("Available", 4, Color.Green));
+grid.AddRow(
+    new Markup("Disk:"),
+    new Panel("[yellow]65% used[/]")
+        .BorderColor(Color.Yellow));
+  
+AnsiConsole.Write(grid);
+
