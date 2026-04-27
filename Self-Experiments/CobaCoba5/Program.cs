@@ -21,21 +21,15 @@
 
 
 Panel panel = new Panel("");
-int w = Console.LargestWindowHeight;
-int h = Console.LargestWindowHeight;
+
 
 string kartu ="10   \n♠    \n    ♠\n   10";
 string kartu2 ="2    \n♦    \n    ♦\n    2";
-Panel card = new Panel(new Markup($"[black on white]{kartu}[/]")).Padding(0,0,0,0).Border(BoxBorder.None);
-Panel card2 = new Panel(new Markup($"[red on white]{kartu2}[/]")).Padding(0,0,0,0).Border(BoxBorder.None);
+Panel card = new Panel(new Markup($"[black on white]{kartu}[/]")).Padding(0,0,0,0).Border(BoxBorder.Rounded);
+Panel card2 = new Panel(new Markup($"[red on white]{kartu2}[/]")).Padding(0,0,0,0).Border(BoxBorder.Rounded);
 // AnsiConsole.Write(card);
 // Console.WriteLine();
 // AnsiConsole.Write(card2);
-
-
-// AnsiConsole.MarkupLine("[#00FF00]HIJAUUUUUUUUUU[/]");
-// AnsiConsole.MarkupLine("[on white]Highlighted[/]");
-
 
 //    Panel panel1 = new Panel();
 //    TextBox textBox1 = new TextBox();
@@ -82,3 +76,34 @@ grid.AddColumn(new GridColumn {Width = 20});
 grid.AddColumn(new GridColumn {Width = 20});
 
 AnsiConsole.Write(cards);
+
+Console.WriteLine();
+
+AnsiConsole.Write(
+    new Align(cards, HorizontalAlignment.Right)
+);
+
+
+//Anggap aja ini Meja
+// Panel card = new Panel(new Markup($"[black on white]{kartu}[/]")).Padding(0,0,0,0).Border(BoxBorder.None);
+
+string table = "";
+int w = 80;
+int h = 24;
+
+while (h > 0)
+{
+    int tmp = w;
+    while(tmp>0)
+    {
+        table+=" ";
+        tmp--;
+    }
+    h--;
+    table+="\n";
+}
+
+// Console.WriteLine(table);
+
+Panel pokerTable = new Panel(new Markup($"[on green]{table}[/]")).Padding(0,0,0,0).Border(BoxBorder.None);
+AnsiConsole.Write(new Align(pokerTable, HorizontalAlignment.Center));

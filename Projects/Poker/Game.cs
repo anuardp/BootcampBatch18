@@ -63,7 +63,7 @@ public class Game
         _smallBlindIndex = (_dealerIndex + 1) % players.Count();
         _bigBlindIndex = (_dealerIndex + 2) % players.Count();
 
-        foreach(var p in players)
+        foreach(IPlayer p in players)
         {
             _playerHands[p] = new List<ICard>();
             _playerChips[p] = AmountToChips(1000);
@@ -77,7 +77,7 @@ public class Game
     }
     private List<IChip> AmountToChips(int amount)
     {
-        var chips = new List<IChip>();
+        List<IChip> chips = new List<IChip>();
         int smallestChipValue = 10;
         
         int chipCount = amount / smallestChipValue;
@@ -93,11 +93,11 @@ public class Game
 
     private void RemoveChipsForBet(List<IChip> playerChips, int betAmount)
     {
-        var sorted = playerChips.OrderByDescending(c => c.Value).ToList();
-        var toRemove = new List<IChip>();
+        List<IChip> sorted = playerChips.OrderByDescending(c => c.Value).ToList();
+        List<IChip> toRemove = new List<IChip>();
         int remaining = betAmount;
 
-        foreach(var chip in sorted)
+        foreach(IChip chip in sorted)
         {
             if(remaining <= 0)break;
             if(chip.Value <= remaining)
@@ -107,7 +107,7 @@ public class Game
             }
         }
 
-        foreach(var chip in toRemove)playerChips.Remove(chip);
+        foreach(IChip chip in toRemove)playerChips.Remove(chip);
         // return toRemove;
     }
 
@@ -224,7 +224,7 @@ public class Game
         int i = 0;
         while (i < 2)
         {
-            foreach(var p in _playerHands.Keys)
+            foreach(IPlayer p in _playerHands.Keys)
             {
                 _playerHands[p].Add(DrawCard());
             }   
@@ -336,11 +336,11 @@ public class Game
 
     public int GetPotCap(int potIndex) //batas jumlah bet yang bisa ditaruh ke dalam suatu pot tertentu
     {   
-        var activePlayers = _players.Where(p => !_playerFolded[p]).ToList();
+        List<IPlayer> activePlayers = _players.Where(p => !_playerFolded[p]).ToList();
         if (activePlayers.Count == 0) return 0;
 
         // Total distinct of bets, urut menaik
-        var distinctBets = activePlayers.Select(p => _playerBets[p])
+        List<int> distinctBets = activePlayers.Select(p => _playerBets[p])
                                         .Distinct()
                                         .OrderBy(b => b)
                                         .ToList();
@@ -367,7 +367,7 @@ public class Game
         for (int i = 1; i <= playerCount; i++)
         {
             int nextIndex = (_currentPlayerIndex + i) % playerCount;
-            var nextPlayer = _players[nextIndex];
+            IPlayer nextPlayer = _players[nextIndex];
             if (!_playerFolded[nextPlayer] && !_playerAllIn[nextPlayer])
             {
                 _currentPlayerIndex = nextIndex;
@@ -379,7 +379,7 @@ public class Game
     //Dapetin semua kombinasi 5 kartu dari 7 kartu (Total ada 21)
     private List<List<ICard>> GetAllFiveCardCombinations(List<ICard> cards)
     {
-        var result = new List<List<ICard>>();
+        List<List<ICard>> result = new List<List<ICard>>();
         int n = cards.Count; 
         for (int i = 0; i < n; i++)
             for (int j = i + 1; j < n; j++)
@@ -393,14 +393,14 @@ public class Game
     public HandStrength EvaluateHand(IPlayer player) //cek tingkat kekuatan kartu player
     {
         //tambah 2 kartu dari board dan 5 kartu dari board ke player.
-        var allCards = _playerHands[player].Concat(_board).ToList();
-        var bestStrength = new HandStrength(HandRank.HighCard, new List<Rank>());
+        List<ICard> allCards = _playerHands[player].Concat(_board).ToList();
+        HandStrength bestStrength = new HandStrength(HandRank.HighCard, new List<Rank>());
 
         
-        var combinations = GetAllFiveCardCombinations(allCards); 
-        foreach (var five in combinations)
+        List<List<ICard>> combinations = GetAllFiveCardCombinations(allCards); 
+        foreach (List<ICard> five in combinations)
         {
-            var strength = EvaluateFiveCardHand(five);
+            HandStrength strength = EvaluateFiveCardHand(five);
             if (CompareHandStrength(strength, bestStrength) > 0)
                 bestStrength = strength;
         }
@@ -426,9 +426,9 @@ public class Game
     public HandStrength EvaluateFiveCardHand(List<ICard> fiveCards)
     {
         // Urut kartu dari rank tertinggi (Ace dianggap paling tinggi)
-        var sorted = fiveCards.OrderByDescending(c => c.Rank).ToList();
-        var ranks = sorted.Select(c => (int)c.Rank).ToList();
-        var suits = sorted.Select(c => c.Suit).ToList();
+        List<ICard> sorted = fiveCards.OrderByDescending(c => c.Rank).ToList();
+        List<int> ranks = sorted.Select(c => (int)c.Rank).ToList();
+        List<Suit> suits = sorted.Select(c => c.Suit).ToList();
 
         // Cek flush (suits sama semua)
         bool isFlush = suits.Distinct().Count() == 1;
@@ -436,7 +436,7 @@ public class Game
         // Cek straight
         bool isStraight = false;
         // Straight -> max - min = 4
-        var distinctRanks = ranks.Distinct().ToList();
+        List<int> distinctRanks = ranks.Distinct().ToList();
         if (distinctRanks.Count == 5 && distinctRanks.Max() - distinctRanks.Min() == 4)
             isStraight = true;
         // Kasus spesifik: Staright, tapi kartu Ace paling bawah (A,2,3,4,5)
@@ -449,7 +449,7 @@ public class Game
         }
 
         // Frekuensi kemunculan masing-masing rank dari kartu ditangan
-        var rankGroups = ranks.GroupBy(r => r).OrderByDescending(g => g.Count()).ThenByDescending(g => g.Key).ToList();
+        List<IGrouping<int,int>> rankGroups = ranks.GroupBy(r => r).OrderByDescending(g => g.Count()).ThenByDescending(g => g.Key).ToList();
         int firstCount = rankGroups[0].Count();
         int secondCount = rankGroups.Count > 1 ? rankGroups[1].Count() : 0;
 
@@ -492,7 +492,7 @@ public class Game
             handRank = HandRank.ThreeOfAKind;
             tieBreakers.Add((Rank)rankGroups[0].Key); // the triplet rank
             // Add the remaining two kickers (descending)
-            foreach (var g in rankGroups.Skip(1))
+            foreach (IGrouping<int,int> g in rankGroups.Skip(1))
                 tieBreakers.Add((Rank)g.Key);
         }
         // Two pair
@@ -510,7 +510,7 @@ public class Game
             handRank = HandRank.OnePair;
             tieBreakers.Add((Rank)rankGroups[0].Key); // pair rank
             // Add the three kickers in descending order
-            foreach (var g in rankGroups.Skip(1))
+            foreach (IGrouping<int,int> g in rankGroups.Skip(1))
                 tieBreakers.Add((Rank)g.Key);
         }
         // High card
@@ -529,7 +529,7 @@ public class Game
         List<IPlayer> winners = new List<IPlayer>();
         HandStrength? bestStrength = null;
 
-        foreach (var player in _players.Where(p => !_playerFolded[p]))
+        foreach (IPlayer player in _players.Where(p => !_playerFolded[p]))
         {
             HandStrength strength = EvaluateHand(player);
             if (bestStrength == null || CompareHandStrength(strength, bestStrength) > 0)
@@ -550,13 +550,13 @@ public class Game
 
     public List<ICard> GetBestFiveCards(IPlayer player)
     {
-        var allCards = _playerHands[player].Concat(_board).ToList();
-        var combinations = GetAllFiveCardCombinations(allCards);
+        List<ICard> allCards = _playerHands[player].Concat(_board).ToList();
+        List<List<ICard>> combinations = GetAllFiveCardCombinations(allCards);
         HandStrength? bestStrength = null;
         List<ICard>? bestCombo = null;
-        foreach (var five in combinations)
+        foreach (List<ICard> five in combinations)
         {
-            var strength = EvaluateFiveCardHand(five);
+            HandStrength strength = EvaluateFiveCardHand(five);
             if (bestStrength == null || CompareHandStrength(strength, bestStrength) > 0)
             {
                 bestStrength = strength;
@@ -568,10 +568,10 @@ public class Game
 
     public void AwardPot()
     {
-        foreach (var pot in _pots)
+        foreach (IPot pot in _pots)
         {
             if (pot.Amount == 0) continue;
-            var eligibleWinners = GetWinners().Where(w => pot.EligiblePlayers.Contains(w)).ToList();
+            List<IPlayer> eligibleWinners = GetWinners().Where(w => pot.EligiblePlayers.Contains(w)).ToList();
             if (eligibleWinners.Count == 0) continue;
             
             int share = pot.Amount / eligibleWinners.Count;
@@ -605,7 +605,7 @@ public class Game
         _pots.Clear();
         _pots.Add(new Pot(_players.ToList(), 0));
         
-        foreach(var p in _players)
+        foreach(IPlayer p in _players)
         {
             _playerHands[p].Clear();
             _playerBets[p] = 0;
@@ -620,7 +620,7 @@ public class Game
     private void ResetBettingRound()
     {
         _currentBetAmount = 0;
-        foreach (var p in _players)
+        foreach (IPlayer p in _players)
         {
             _playerBets[p] = 0;
         }
@@ -634,7 +634,7 @@ public class Game
     public int GetTotalChips(IPlayer player)
     {
         int totalChipScore = 0;
-        foreach(var chip in _playerChips[player])totalChipScore += chip.Value;
+        foreach(IChip chip in _playerChips[player])totalChipScore += chip.Value;
         return totalChipScore;
     }
     public bool IsFolded(IPlayer player)
@@ -649,7 +649,7 @@ public class Game
     public bool IsGameEndedEarly() //Cek apa player yang tidak fold tinggal satu atau tidak.
     {
         int foldCheck = 0;
-        foreach(var p in _players)if(_playerFolded[p])foldCheck++;
+        foreach(IPlayer p in _players)if(_playerFolded[p])foldCheck++;
         
         if(foldCheck == _players.Count-1)return true;
         else return false;
@@ -657,7 +657,7 @@ public class Game
 
     public bool IsBettingRoundOver() //cek apa sesi taruhan sudah selesai (semua eligible player sudah call)
     {
-        foreach (var player in _players)
+        foreach (IPlayer player in _players)
         {
             if (_playerFolded[player])continue;
             if (_playerAllIn[player])continue;

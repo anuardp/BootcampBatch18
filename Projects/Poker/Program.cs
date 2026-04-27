@@ -103,7 +103,7 @@ class Program
             }
             else
             {
-                var (action, amount) = game.DecideBotAction(currentPlayer);
+                (PlayerAction action, int amount) = game.DecideBotAction(currentPlayer);
                 Console.WriteLine($"{currentPlayer.Name} decides: {action}" + (amount > 0 ? $" {amount}" : ""));
                 game.HandleAction(currentPlayer, action, amount);
             }
@@ -138,8 +138,8 @@ class Program
         }
 
         game.AwardPot();
-        var dead = game.GetPlayers().Where(p => game.GetTotalChips(p) == 0).ToList();
-        foreach (var d in dead)
+        List<IPlayer> dead = game.GetPlayers().Where(p => game.GetTotalChips(p) == 0).ToList();
+        foreach (IPlayer d in dead)
             game.RemovePlayer(d);
     }
 
@@ -205,7 +205,7 @@ class Program
     {
         Console.WriteLine("\n--- Game State ---");
         Console.Write("Cards on Board: \n");
-        var board = game.GetBoard();
+        List<ICard> board = game.GetBoard();
         if (board.Count == 0)
             Console.Write("[Xx] [Xx] [Xx] [Xx] [Xx]");
         else if (board.Count == 3)
@@ -219,13 +219,13 @@ class Program
         //Human turn 
         if (currentPlayer != null && currentPlayer is Player p && p.Type == "human")
         {
-            var hand = game.GetHand(currentPlayer);
+            List<ICard> hand = game.GetHand(currentPlayer);
             if (hand.Count == 2)
                 Console.WriteLine($"\nYour hand:\n{CardTranslate(hand[0])} {CardTranslate(hand[1])})\n");
         }
 
         // Tampilkan semua pemain beserta chip dan bet terupdate
-        foreach (var player in game.GetPlayers())
+        foreach (IPlayer player in game.GetPlayers())
         {
             string status = "";
             if (game.IsFolded(player)) status = "[FOLD]";
@@ -239,12 +239,12 @@ class Program
     static void RenderShowdown(Game game)
     {
         Console.WriteLine("\n--- SHOWDOWN ---");
-        var activePlayers = game.GetActivePlayers();
-        foreach (var player in activePlayers)
+        List<IPlayer> activePlayers = game.GetActivePlayers();
+        foreach (IPlayer player in activePlayers)
         {
-            var hand = game.GetHand(player);
-            var bestFive = game.GetBestFiveCards(player);
-            var strength = game.EvaluateHand(player);
+            List<ICard> hand = game.GetHand(player);
+            List<ICard> bestFive = game.GetBestFiveCards(player);
+            HandStrength strength = game.EvaluateHand(player);
             Console.Write($"{player.Name}'s hand: {strength.Rank}");
             if (bestFive != null && bestFive.Count == 5)
             {
@@ -252,7 +252,7 @@ class Program
             }
             Console.WriteLine();
         }
-        var winners = game.GetWinnersOnRound();
+        List<IPlayer> winners = game.GetWinnersOnRound();
         int totalPot = game.GetTotalPot();
         int numWinners = winners.Count;
         int share = totalPot / numWinners;
@@ -287,5 +287,5 @@ class Program
         return $"[{rank}{suit}]";
     }
 
-    static 
+    
 }
