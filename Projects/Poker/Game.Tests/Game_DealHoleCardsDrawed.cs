@@ -1,5 +1,5 @@
 using NUnit.Framework;
-// using Game;
+using Game;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 
@@ -42,7 +42,7 @@ public class Game_DealHoleCardsDrawed
         _game.DealHoleCards(playerHands, deck);
         bool cekBagiKartuSesuai = true;
         int counter = 0;
-        foreach(IPlayer p in playerHands.Keys)
+        foreach(IPlayer p in playerHands)
         {
             if(playerHands[p][0]!=deck[counter] || playerHands[p][1] != deck[counter + players.Count])
             {
@@ -85,7 +85,7 @@ public class Game_DealHoleCardsDrawed
         {new Card(Suit.Clubs, Rank.Seven)},
         {new Card(Suit.Diamonds, Rank.Seven)},
         {new Card(Suit.Clubs, Rank.Eight)},
-        {new Card(Suit.Hearts, Rank.Ace)},
+        {new Card(Suit.Hearts, Rank.Ace)}
         {new Card(Suit.Spades, Rank.King)},
         {new Card(Suit.Diamonds, Rank.Nine)},
         {new Card(Suit.Hearts, Rank.Ten)},
@@ -104,8 +104,10 @@ public class Game_DealHoleCardsDrawed
         {new Card(Suit.Diamonds, Rank.Four)},
         {new Card(Suit.Diamonds, Rank.Five)},
         {new Card(Suit.Hearts, Rank.King)},
-        {new Card(Suit.Diamonds, Rank.Six)}
+        {new Card(Suit.Diamonds, Rank.Six)},
     };
-    [TestCase(deck)]
+    
+
+    [TestCase(cards)]
 }
 

@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Collections.Generic;
 
-
 public class Game
 {
     private List<IPlayer> _players {get;set;}
