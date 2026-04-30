@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Game.UnitTests;
 
-[TestFixture]
+[TextFixture]
 public class Game_MovetoNextPhaseHasMoved
 {
     private Game _game;

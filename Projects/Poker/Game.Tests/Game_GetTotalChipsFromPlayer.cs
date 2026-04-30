@@ -1,7 +1,7 @@
 using NUnit.Framework;
 // using Game;
 using System.Linq;
-using System.Security.Cryptograph   y.X509Certificates;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Game.UnitTests;
 

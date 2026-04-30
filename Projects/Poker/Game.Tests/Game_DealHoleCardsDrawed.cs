@@ -5,7 +5,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace Game.UnitTests;
 
-[TestFixture]
+[TextFixture]
 public class Game_DealHoleCardsDrawed
 {
     private Game _game;
