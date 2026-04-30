@@ -1,15 +1,4 @@
-﻿/*
- * Entity Framework Core Library Management Demo
- * 
- * This application demonstrates all key EF Core concepts:
- * - DbContext and entity configuration
- * - CRUD operations (Create, Read, Update, Delete)
- * - LINQ queries with EF Core
- * - Relationships (One-to-Many, One-to-One)
- * - Migrations and database creation
- */
-
-using Entity_Framework.Data;
+﻿using Entity_Framework.Data;
 using Entity_Framework.Models;
 using Entity_Framework.Services;
 using Microsoft.EntityFrameworkCore;
