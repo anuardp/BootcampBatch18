@@ -26,8 +26,8 @@ namespace Entity_Framework
             try
             {   
                 
-                // await DemonstrateCrudOperationsAsync(bookService, visitorService, bookCopyService);
-                // await DemonstrateBorrowingProcessAsync(borrowBookService, visitorService, bookCopyService);
+                await DemonstrateCrudOperationsAsync(bookService, visitorService, bookCopyService);
+                await DemonstrateBorrowingProcessAsync(borrowBookService, visitorService, bookCopyService);
                 await DemonstrateFineManagementAsync(fineService, borrowBookService);
                 Console.WriteLine("\n=== Demo completed successfully! ===");
                 Console.WriteLine("Check the LibraryDatabase.db file created in your project folder.");
@@ -140,7 +140,7 @@ namespace Entity_Framework
             var visitorToDelete = await visitorService.GetByIdAsync(createdVisitor.Id);
             if (visitorToDelete != null)
             {
-                // Ensure no active borrows
+      
                 var deleted = await visitorService.DeleteAsync(visitorToDelete.Id);
                 if (deleted)
                     Console.WriteLine($"✓ Deleted visitor: {visitorToDelete.Name}");
@@ -191,7 +191,7 @@ namespace Entity_Framework
                     Console.WriteLine("   No fines.");
             }
 
-            // Check copy availability after return
+            
             var copiesNow = await copyService.GetByIdAsync(copy.Id);
             Console.WriteLine($"\n4. Book copy '{copiesNow?.BookCode}' availability after return: {(copiesNow?.IsAvailable == true ? "Available" : "Not available")}");
             Console.WriteLine("\n--- Borrowing & Returning Complete ---\n");
