@@ -8,9 +8,10 @@ public class BorrowBookService
     private readonly LibraryDbContext _context;
     private readonly FineService _fineService;
 
-    public BorrowBookService(LibraryDbContext context)
+    public BorrowBookService(LibraryDbContext context, FineService fineService)
     {
         _context = context;
+        _fineService = fineService;
     }
 
     //CREATE
@@ -43,11 +44,8 @@ public class BorrowBookService
 
         _context.BorrowBooks.Add(borrow);
         await _context.SaveChangesAsync();
-        await _context.Entry(borrow).Reference(bb => bb.BookCopy).Query().Include(bc => bc.Book).LoadAsync();
-        await _context.Entry(borrow).Reference(bb => bb.Visitor).LoadAsync();
 
-        // return await GetByIdAsync(borrow.Id) ?? borrow;
-        return borrow;
+        return await GetByIdAsync(borrow.Id) ?? borrow;
     }
 
     // READ

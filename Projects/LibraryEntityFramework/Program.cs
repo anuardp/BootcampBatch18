@@ -9,7 +9,7 @@ namespace Entity_Framework
     {
         static async Task Main(string[] args)
         {
-            Console.WriteLine("=== Library Management System - EF Core Demo ===\n");
+            Console.WriteLine("=== Library Management System - EF Core===\n");
 
             using var context = new LibraryDbContext();
             
@@ -22,23 +22,13 @@ namespace Entity_Framework
             var bookService = new BookService(context);
             var bookCopyService = new BookCopyService(context);
             var fineService = new FineService(context);
-            var borrowBookService = new BorrowBookService(context);
-
-
-
+            var borrowBookService = new BorrowBookService(context, fineService);
             try
             {   
-                // Demo 1: CRUD Operations on Books and Visitors
-                await DemonstrateCrudOperationsAsync(bookService, visitorService, bookCopyService);
-
-                // // Demo 2: Borrowing and Returning Books
+                
+                // await DemonstrateCrudOperationsAsync(bookService, visitorService, bookCopyService);
                 // await DemonstrateBorrowingProcessAsync(borrowBookService, visitorService, bookCopyService);
-
-                // // Demo 3: Fine Management
-                // await DemonstrateFineManagementAsync(fineService, borrowBookService);
-
-                // // Demo 4: Advanced Queries and Reporting
-                // await DemonstrateAdvancedQueriesAsync(context);
+                await DemonstrateFineManagementAsync(fineService, borrowBookService);
                 Console.WriteLine("\n=== Demo completed successfully! ===");
                 Console.WriteLine("Check the LibraryDatabase.db file created in your project folder.");
             }
@@ -159,6 +149,93 @@ namespace Entity_Framework
             }
             Console.WriteLine("\n--- CRUD Operations Complete ---\n");
         }
+        static async Task DemonstrateBorrowingProcessAsync(BorrowBookService borrowService, VisitorService visitorService, BookCopyService copyService)
+        {
+            Console.WriteLine("=== Borrowing & Returning Process ===");
 
+            var visitors = await visitorService.GetAllAsync();
+            var visitor = visitors.FirstOrDefault(v => v.IsLibraryMember);
+            if (visitor == null)
+            {
+                Console.WriteLine("No eligible visitor found.");
+                return;
+            }
+
+            var availableCopies = await copyService.GetAvailableCopiesAsync(1); // assume book ID 1 has copies
+            var copy = availableCopies.FirstOrDefault();
+            if (copy == null)
+            {
+                Console.WriteLine("No available book copies.");
+                return;
+            }
+
+            Console.WriteLine($"\n1. Borrowing book copy '{copy.BookCode}' for visitor '{visitor.Name}'...");
+            var borrow = await borrowService.BorrowAsync(copy.Id, visitor.Id, loanDurationDays: 7);
+            Console.WriteLine($"✓ Borrowed successfully! Due date: {borrow.BorrowBookDue:yyyy-MM-dd}");
+
+            Console.WriteLine("\n2. Active borrows:");
+            var activeBorrows = await borrowService.GetActiveBorrowsAsync();
+            foreach (var b in activeBorrows)
+            {
+                Console.WriteLine($"   - {b.Visitor?.Name} borrowed '{b.BookCopy?.Book?.BookTitle}' until {b.BorrowBookDue:yyyy-MM-dd}");
+            }
+
+            Console.WriteLine("\n3. Returning the book...");
+            var returned = await borrowService.ReturnBookAsync(borrow.Id);
+            if (returned != null)
+            {
+                Console.WriteLine($"✓ Returned on {returned.ReturnedDate:yyyy-MM-dd}");
+                if (returned.Fine != null && returned.Fine.TotalFine > 0)
+                    Console.WriteLine($"   Note: Late fine of {returned.Fine.TotalFine:C} applied.");
+                else
+                    Console.WriteLine("   No fines.");
+            }
+
+            // Check copy availability after return
+            var copiesNow = await copyService.GetByIdAsync(copy.Id);
+            Console.WriteLine($"\n4. Book copy '{copiesNow?.BookCode}' availability after return: {(copiesNow?.IsAvailable == true ? "Available" : "Not available")}");
+            Console.WriteLine("\n--- Borrowing & Returning Complete ---\n");
+        }
+        static async Task DemonstrateFineManagementAsync(FineService fineService, BorrowBookService borrowService)
+        {
+            Console.WriteLine("=== Fine Management Demo ===");
+            var unpaidFines = await fineService.GetUnpaidFinesAsync();
+            Console.WriteLine("\n1. Unpaid fines:");
+            if (!unpaidFines.Any())
+            {
+                Console.WriteLine("   No unpaid fines.");
+            }
+            else
+            {
+                foreach (var fine in unpaidFines)
+                {
+                    Console.WriteLine($"   - Fine ID: {fine.Id}, Amount: {fine.TotalFine:C}, Visitor: {fine.BorrowBook?.Visitor?.Name ?? "N/A"}");
+                }
+            }
+
+            var firstFine = unpaidFines.FirstOrDefault();
+            if (firstFine != null)
+            {
+                Console.WriteLine($"\n2. Paying fine of {firstFine.TotalFine:C}...");
+                var paid = await fineService.PayFineAsync(firstFine.Id);
+                if (paid)
+                {
+                    Console.WriteLine($"✓ Fine paid on {DateTime.Now:yyyy-MM-dd}");
+                    var updatedFine = await fineService.GetByIdAsync(firstFine.Id);
+                    Console.WriteLine($"   Status: {(updatedFine?.HasPayFine == true ? "Paid" : "Unpaid")}");
+                }
+            }
+
+
+            var visitors = await new VisitorService(new LibraryDbContext()).GetAllAsync();
+            var visitor = visitors.FirstOrDefault();
+            if (visitor != null)
+            {
+                var outstanding = await fineService.GetOutstandingFinesByVisitorAsync(visitor.Id);
+                Console.WriteLine($"\n3. Outstanding fines for {visitor.Name}: {outstanding:C}");
+            }
+
+            Console.WriteLine("\n--- Fine Management Complete ---\n");
+        }
     }
 }
