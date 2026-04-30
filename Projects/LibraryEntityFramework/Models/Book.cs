@@ -16,10 +16,10 @@ public class Book
     [Required]
     [MaxLength(150)]
     public string BookPublisher {get; set;} = string.Empty;    
-    public List<string> BookAuthors {get; set;} = new List<string>();
-    public List<string> Genre {get; set;} = new List<string>();
+    public string BookAuthors {get; set;} = string.Empty;
+    public string Genre {get; set;} = string.Empty;
     public int YearReleased {get; set;}
 
 
-    public virtual ICollection<BorrowBook> BorrowBooks{get; set;}
+    public virtual ICollection<BookCopy> BookCopies{get; set;}
 }

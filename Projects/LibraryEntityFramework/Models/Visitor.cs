@@ -22,5 +22,5 @@ public class Visitor
     public DateTime BirthDate {get; set;}
 
     public bool IsLibraryMember {get; set;} = false;
-    public virtual ICollection<BorrowBook> BorrowBooks{get; set;}
+    public virtual ICollection<BorrowBook>? BorrowBooks{get; set;}
 }
