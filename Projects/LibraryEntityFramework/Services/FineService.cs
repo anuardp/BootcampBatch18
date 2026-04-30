@@ -3,11 +3,11 @@ using Entity_Framework.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Entity_Framework.Services;
-public class VisitorService
+public class FineService
 {
     private readonly LibraryDbContext _context;
 
-    public VisitorService(LibraryDbContext context)
+    public FineService(LibraryDbContext context)
     {
         _context = context;
     }
@@ -19,6 +19,4 @@ public class VisitorService
     //UPDATE
     
     //DELETE
-
-
 }

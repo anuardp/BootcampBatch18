@@ -3,11 +3,11 @@ using Entity_Framework.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Entity_Framework.Services;
-public class VisitorService
+public class BorrowBookService
 {
     private readonly LibraryDbContext _context;
 
-    public VisitorService(LibraryDbContext context)
+    public BorrowBookService(LibraryDbContext context)
     {
         _context = context;
     }

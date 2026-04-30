@@ -21,5 +21,5 @@ public class Book
     public int YearReleased {get; set;}
 
 
-    public virtual ICollection<BookCopy> BookCopies{get; set;}
+    public virtual ICollection<BookCopy>? BookCopies{get; set;}
 }
