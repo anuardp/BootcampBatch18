@@ -13,10 +13,8 @@ namespace Entity_Framework
 
             using var context = new LibraryDbContext();
             
-            // Apply migrations and create database if needed
             await ApplyMigrationsAsync(context);
             
-            // Seed initial data
             await SeedDatabaseAsync(context);
 
             // Initialize services
@@ -28,18 +26,7 @@ namespace Entity_Framework
 
             try
             {
-                // Demo 1: CRUD Operations on Books and Visitors
-                await DemonstrateCrudOperationsAsync(bookService, visitorService, bookCopyService);
-
-                // Demo 2: Borrowing and Returning Books
-                await DemonstrateBorrowingProcessAsync(borrowBookService, visitorService, bookCopyService);
-
-                // Demo 3: Fine Management
-                await DemonstrateFineManagementAsync(fineService, borrowBookService);
-
-                // Demo 4: Advanced Queries and Reporting
-                await DemonstrateAdvancedQueriesAsync(context);
-
+                
                 Console.WriteLine("\n=== Demo completed successfully! ===");
                 Console.WriteLine("Check the LibraryDatabase.db file created in your project folder.");
             }
@@ -51,19 +38,12 @@ namespace Entity_Framework
             }
         }
 
-        /// <summary>
-        /// Applies pending migrations to the database
-        /// </summary>
         static async Task ApplyMigrationsAsync(LibraryDbContext context)
         {
             Console.WriteLine("Applying database migrations...");
             await context.Database.EnsureCreatedAsync(); // Membuat database jika belum ada
             Console.WriteLine("Database is ready.\n");
         }
-
-        /// <summary>
-        /// Seeds the database with initial data if empty
-        /// </summary>
         static async Task SeedDatabaseAsync(LibraryDbContext context)
         {
             if (await context.Books.AnyAsync())
@@ -111,234 +91,6 @@ namespace Entity_Framework
             await context.SaveChangesAsync();
 
             Console.WriteLine("Database seeding completed!\n");
-        }
-        static async Task DemonstrateCrudOperationsAsync(BookService bookService, VisitorService visitorService, BookCopyService bookCopyService)
-        {
-            Console.WriteLine("=== CRUD Operations Demo ===");
-
-
-            Console.WriteLine("\n1. Adding a new book...");
-            var newBook = new Book
-            {
-                BookISBN = "978-1-098-12345-6",
-                BookTitle = "Clean Code",
-                BookPublisher = "Prentice Hall",
-                BookAuthors = "Robert C. Martin",
-                Genre = "Software Engineering",
-                YearReleased = 2008
-            };
-            var createdBook = await bookService.CreateAsync(newBook);
-            Console.WriteLine($"✓ Added: {createdBook.BookTitle} (ID: {createdBook.Id})");
-
- 
-            Console.WriteLine("\n2. Listing all books:");
-            var allBooks = await bookService.GetAllAsync();
-            foreach (var book in allBooks)
-            {
-                Console.WriteLine($"   - {book.BookTitle} by {book.BookAuthors} ({book.YearReleased})");
-            }
-
-    
-            Console.WriteLine("\n3. Updating book publisher...");
-            createdBook.BookPublisher = "Pearson Education";
-            var updatedBook = await bookService.UpdateAsync(createdBook.Id, createdBook);
-            if (updatedBook != null)
-                Console.WriteLine($"✓ Updated publisher to: {updatedBook.BookPublisher}");
-
-
-            Console.WriteLine("\n4. Adding a new visitor...");
-            var newVisitor = new Visitor
-            {
-                Name = "Alice Brown",
-                Email = "alice@example.com",
-                PhoneNumber = "081377788899",
-                BirthDate = new DateTime(2000, 7, 25),
-                IsLibraryMember = true
-            };
-            var createdVisitor = await visitorService.CreateAsync(newVisitor);
-            Console.WriteLine($"✓ Added visitor: {createdVisitor.Name} (ID: {createdVisitor.Id})");
-
-            // DELETE a visitor (soft delete? we will delete if no active borrows)
-            Console.WriteLine("\n5. Deleting a visitor (if has no active borrows)...");
-            var visitorToDelete = await visitorService.GetByIdAsync(createdVisitor.Id);
-            if (visitorToDelete != null)
-            {
-                // Ensure no active borrows
-                var deleted = await visitorService.DeleteAsync(visitorToDelete.Id);
-                if (deleted)
-                    Console.WriteLine($"✓ Deleted visitor: {visitorToDelete.Name}");
-                else
-                    Console.WriteLine($"✗ Could not delete {visitorToDelete.Name} (may have active borrows)");
-            }
-
-            Console.WriteLine("\n--- CRUD Operations Demo Complete ---\n");
-        }
-
-
-        static async Task DemonstrateBorrowingProcessAsync(BorrowBookService borrowService, VisitorService visitorService, BookCopyService copyService)
-        {
-            Console.WriteLine("=== Borrowing & Returning Process ===");
-
-            var visitors = await visitorService.GetAllAsync();
-            var visitor = visitors.FirstOrDefault(v => v.IsLibraryMember);
-            if (visitor == null)
-            {
-                Console.WriteLine("No eligible visitor found.");
-                return;
-            }
-
-            var availableCopies = await copyService.GetAvailableCopiesAsync(1); // assume book ID 1 has copies
-            var copy = availableCopies.FirstOrDefault();
-            if (copy == null)
-            {
-                Console.WriteLine("No available book copies.");
-                return;
-            }
-
-            Console.WriteLine($"\n1. Borrowing book copy '{copy.BookCode}' for visitor '{visitor.Name}'...");
-            var borrow = await borrowService.BorrowAsync(copy.Id, visitor.Id, loanDurationDays: 7);
-            Console.WriteLine($"✓ Borrowed successfully! Due date: {borrow.BorrowBookDue:yyyy-MM-dd}");
-
-
-            Console.WriteLine("\n2. Active borrows:");
-            var activeBorrows = await borrowService.GetActiveBorrowsAsync();
-            foreach (var b in activeBorrows)
-            {
-                Console.WriteLine($"   - {b.Visitor?.Name} borrowed '{b.BookCopy?.Book?.BookTitle}' until {b.BorrowBookDue:yyyy-MM-dd}");
-            }
-
-            Console.WriteLine("\n3. Returning the book...");
-            var returned = await borrowService.ReturnBookAsync(borrow.Id);
-            if (returned != null)
-            {
-                Console.WriteLine($"✓ Returned on {returned.ReturnedDate:yyyy-MM-dd}");
-                if (returned.Fine != null && returned.Fine.TotalFine > 0)
-                    Console.WriteLine($"   Note: Late fine of {returned.Fine.TotalFine:C} applied.");
-                else
-                    Console.WriteLine("   No fines.");
-            }
-
-            // Check copy availability after return
-            var copiesNow = await copyService.GetByIdAsync(copy.Id);
-            Console.WriteLine($"\n4. Book copy '{copiesNow?.BookCode}' availability after return: {(copiesNow?.IsAvailable == true ? "Available" : "Not available")}");
-
-            Console.WriteLine("\n--- Borrowing & Returning Demo Complete ---\n");
-        }
-
-
-        static async Task DemonstrateFineManagementAsync(FineService fineService, BorrowBookService borrowService)
-        {
-            Console.WriteLine("=== Fine Management Demo ===");
-
-
-            var unpaidFines = await fineService.GetUnpaidFinesAsync();
-            Console.WriteLine("\n1. Unpaid fines:");
-            if (!unpaidFines.Any())
-            {
-                Console.WriteLine("   No unpaid fines.");
-            }
-            else
-            {
-                foreach (var fine in unpaidFines)
-                {
-                    Console.WriteLine($"   - Fine ID: {fine.Id}, Amount: {fine.TotalFine:C}, Visitor: {fine.BorrowBook?.Visitor?.Name ?? "N/A"}");
-                }
-            }
-
-
-            var firstFine = unpaidFines.FirstOrDefault();
-            if (firstFine != null)
-            {
-                Console.WriteLine($"\n2. Paying fine of {firstFine.TotalFine:C}...");
-                var paid = await fineService.PayFineAsync(firstFine.Id);
-                if (paid)
-                {
-                    Console.WriteLine($"✓ Fine paid on {DateTime.Now:yyyy-MM-dd}");
-                    var updatedFine = await fineService.GetByIdAsync(firstFine.Id);
-                    Console.WriteLine($"   Status: {(updatedFine?.HasPayFine == true ? "Paid" : "Unpaid")}");
-                }
-            }
-
-
-            var visitors = await new VisitorService(new LibraryDbContext()).GetAllAsync();
-            var visitor = visitors.FirstOrDefault();
-            if (visitor != null)
-            {
-                var outstanding = await fineService.GetOutstandingFinesByVisitorAsync(visitor.Id);
-                Console.WriteLine($"\n3. Outstanding fines for {visitor.Name}: {outstanding:C}");
-            }
-
-            Console.WriteLine("\n--- Fine Management Demo Complete ---\n");
-        }
-        static async Task DemonstrateAdvancedQueriesAsync(LibraryDbContext context)
-        {
-            Console.WriteLine("=== Advanced Queries & Reporting ===");
-
-            // Most borrowed books
-            Console.WriteLine("\n1. Most borrowed books (top 3):");
-            var mostBorrowed = await context.BorrowBooks
-                .Where(bb => bb.BookCopy != null)
-                .GroupBy(bb => bb.BookCopy!.BookId)
-                .Select(g => new { BookId = g.Key, BorrowCount = g.Count() })
-                .OrderByDescending(x => x.BorrowCount)
-                .Take(3)
-                .Join(context.Books, x => x.BookId, b => b.Id, (x, b) => new { b.BookTitle, x.BorrowCount })
-                .ToListAsync();
-
-            foreach (var item in mostBorrowed)
-            {
-                Console.WriteLine($"   - {item.BookTitle}: {item.BorrowCount} borrows");
-            }
-
-            // Visitors with active borrows
-            Console.WriteLine("\n2. Visitors currently borrowing books:");
-            var activeVisitors = await context.Visitors
-                .Where(v => v.BorrowBooks != null && v.BorrowBooks.Any(bb => bb.ReturnedDate == null))
-                .Select(v => new { v.Name, ActiveBorrows = v.BorrowBooks!.Count(bb => bb.ReturnedDate == null) })
-                .ToListAsync();
-
-            foreach (var v in activeVisitors)
-            {
-                Console.WriteLine($"   - {v.Name}: {v.ActiveBorrows} book(s)");
-            }
-
-            // Overdue books
-            Console.WriteLine("\n3. Overdue books (not yet returned):");
-            var overdue = await context.BorrowBooks
-                .Where(bb => bb.ReturnedDate == null && bb.BorrowBookDue < DateTime.Now)
-                .Include(bb => bb.BookCopy!.Book)
-                .Include(bb => bb.Visitor)
-                .ToListAsync();
-
-            foreach (var bb in overdue)
-            {
-                var daysLate = (DateTime.Now - bb.BorrowBookDue).Days;
-                Console.WriteLine($"   - {bb.BookCopy?.Book?.BookTitle} borrowed by {bb.Visitor?.Name}, due {bb.BorrowBookDue:yyyy-MM-dd} ({daysLate} days late)");
-            }
-
-            //Total fines collected
-            var totalFines = await context.Fines
-                .Where(f => f.HasPayFine)
-                .SumAsync(f => f.TotalFine);
-            Console.WriteLine($"\n4. Total fines collected: {totalFines:C}");
-
-            //Library statistics
-            var bookCount = await context.Books.CountAsync();
-            var copyCount = await context.BookCopies.CountAsync();
-            var visitorCount = await context.Visitors.CountAsync();
-            var activeBorrowCount = await context.BorrowBooks.CountAsync(bb => bb.ReturnedDate == null);
-            var overdueCount = await context.BorrowBooks.CountAsync(bb => bb.ReturnedDate == null && bb.BorrowBookDue < DateTime.Now);
-            var unpaidFineCount = await context.Fines.CountAsync(f => !f.HasPayFine);
-
-            Console.WriteLine("\n5. Library Statistics:");
-            Console.WriteLine($"   Total book titles: {bookCount}");
-            Console.WriteLine($"   Total copies: {copyCount}");
-            Console.WriteLine($"   Total visitors: {visitorCount}");
-            Console.WriteLine($"   Active borrows: {activeBorrowCount}");
-            Console.WriteLine($"   Overdue borrows: {overdueCount}");
-            Console.WriteLine($"   Unpaid fines: {unpaidFineCount}");
-
-            Console.WriteLine("\n--- Advanced Queries Demo Complete ---\n");
         }
     }
 }
