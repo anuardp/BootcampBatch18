@@ -16,19 +16,16 @@ public class BorrowBookService
     //CREATE
     public async Task<BorrowBook> BorrowAsync(int bookCopyId, int visitorId, int loanDurationDays = 14)
     {
-        // Validasi visitor
         var visitor = await _context.Visitors.FindAsync(visitorId);
         if (visitor == null)
             throw new ArgumentException("Visitor not found.");
 
-        // Validasi book copy
         var copy = await _context.BookCopies.FindAsync(bookCopyId);
         if (copy == null)
             throw new ArgumentException("Book copy not found.");
         if (!copy.IsAvailable)
             throw new InvalidOperationException("Book copy is not available for borrowing.");
 
-        // Option: cek apakah visitor memiliki denda belum dibayar
         var outstandingFine = await _fineService.GetOutstandingFinesByVisitorAsync(visitorId);
         if (outstandingFine > 0)
             throw new InvalidOperationException($"Visitor has outstanding fines of {outstandingFine}. Please pay first.");
@@ -46,8 +43,11 @@ public class BorrowBookService
 
         _context.BorrowBooks.Add(borrow);
         await _context.SaveChangesAsync();
+        await _context.Entry(borrow).Reference(bb => bb.BookCopy).Query().Include(bc => bc.Book).LoadAsync();
+        await _context.Entry(borrow).Reference(bb => bb.Visitor).LoadAsync();
 
-        return await GetByIdAsync(borrow.Id) ?? borrow;
+        // return await GetByIdAsync(borrow.Id) ?? borrow;
+        return borrow;
     }
 
     // READ

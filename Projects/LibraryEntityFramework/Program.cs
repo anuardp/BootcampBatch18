@@ -24,9 +24,21 @@ namespace Entity_Framework
             var fineService = new FineService(context);
             var borrowBookService = new BorrowBookService(context);
 
+
+
             try
-            {
-                
+            {   
+                // Demo 1: CRUD Operations on Books and Visitors
+                await DemonstrateCrudOperationsAsync(bookService, visitorService, bookCopyService);
+
+                // // Demo 2: Borrowing and Returning Books
+                // await DemonstrateBorrowingProcessAsync(borrowBookService, visitorService, bookCopyService);
+
+                // // Demo 3: Fine Management
+                // await DemonstrateFineManagementAsync(fineService, borrowBookService);
+
+                // // Demo 4: Advanced Queries and Reporting
+                // await DemonstrateAdvancedQueriesAsync(context);
                 Console.WriteLine("\n=== Demo completed successfully! ===");
                 Console.WriteLine("Check the LibraryDatabase.db file created in your project folder.");
             }
@@ -89,8 +101,64 @@ namespace Entity_Framework
             };
             await context.BookCopies.AddRangeAsync(bookCopies);
             await context.SaveChangesAsync();
-
             Console.WriteLine("Database seeding completed!\n");
         }
+
+        static async Task DemonstrateCrudOperationsAsync(BookService bookService, VisitorService visitorService, BookCopyService bookCopyService)
+        {
+            Console.WriteLine("=== CRUD Operations Demo ===");
+            Console.WriteLine("\n1. Adding a new book...");
+            var newBook = new Book
+            {
+                BookISBN = "978-1-098-12345-6",
+                BookTitle = "Clean Code",
+                BookPublisher = "Prentice Hall",
+                BookAuthors = "Robert C. Martin",
+                Genre = "Software Engineering",
+                YearReleased = 2008
+            };
+            var createdBook = await bookService.CreateAsync(newBook);
+            Console.WriteLine($"✓ Added: {createdBook.BookTitle} (ID: {createdBook.Id})");
+
+ 
+            Console.WriteLine("\n2. Listing all books:");
+            var allBooks = await bookService.GetAllAsync();
+            foreach (var book in allBooks)
+            {
+                Console.WriteLine($"  - {book.BookTitle} by {book.BookAuthors} ({book.YearReleased})");
+            }
+            Console.WriteLine("\n3. Updating book publisher.");
+            createdBook.BookPublisher = "Pearson Education";
+            var updatedBook = await bookService.UpdateAsync(createdBook.Id, createdBook);
+            if (updatedBook != null)
+                Console.WriteLine($"✓ Updated publisher to: {updatedBook.BookPublisher}");
+
+
+            Console.WriteLine("\n4. Adding a new visitor...");
+            var newVisitor = new Visitor
+            {
+                Name = "Alice Brown",
+                Email = "alice@example.com",
+                PhoneNumber = "081377788899",
+                BirthDate = new DateTime(2000, 7, 25),
+                IsLibraryMember = true
+            };
+            var createdVisitor = await visitorService.CreateAsync(newVisitor);
+            Console.WriteLine($"✓ Added visitor: {createdVisitor.Name} (ID: {createdVisitor.Id})");
+
+            Console.WriteLine("\n5. Deleting a visitor (if has no active borrows)...");
+            var visitorToDelete = await visitorService.GetByIdAsync(createdVisitor.Id);
+            if (visitorToDelete != null)
+            {
+                // Ensure no active borrows
+                var deleted = await visitorService.DeleteAsync(visitorToDelete.Id);
+                if (deleted)
+                    Console.WriteLine($"✓ Deleted visitor: {visitorToDelete.Name}");
+                else
+                    Console.WriteLine($"✗ Could not delete {visitorToDelete.Name} (may have active borrows)");
+            }
+            Console.WriteLine("\n--- CRUD Operations Complete ---\n");
+        }
+
     }
 }
