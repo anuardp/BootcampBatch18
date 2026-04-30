@@ -15,7 +15,6 @@ public class BookService
     // CREATE
     public async Task<Book> CreateAsync(Book book)
     {
-        // Validasi ISBN unique (opsional)
         if (await _context.Books.AnyAsync(b => b.BookISBN == book.BookISBN))
             throw new InvalidOperationException("Book with same ISBN already exists.");
 
