@@ -5,7 +5,7 @@ namespace Entity_Framework.Models;
 
 public class Visitor
 {
-    public int VisitorID {get; set;}
+    public int Id {get; set;}
 
     [Required]
     [MaxLength(150)]

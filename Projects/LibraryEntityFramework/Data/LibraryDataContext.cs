@@ -26,28 +26,28 @@ public class LibraryDbContext : DbContext
         modelBuilder.Entity<BookCopy>()
             .HasOne(bc => bc.Book)
             .WithMany(b => b.BookCopies)
-            .HasForeignKey(bc => bc.BookID);
+            .HasForeignKey(bc => bc.BookId);
         
         modelBuilder.Entity<BorrowBook>()
             .HasOne(bb => bb.BookCopy)
             .WithMany(bc => bc.BorrowBooks)
-            .HasForeignKey(bb => bb.BookCopyID);
+            .HasForeignKey(bb => bb.BookCopyId);
         
         modelBuilder.Entity<BorrowBook>()
             .HasOne(bb => bb.Visitor)
             .WithMany(v => v.BorrowBooks)
-            .HasForeignKey(bb => bb.VisitorID);
+            .HasForeignKey(bb => bb.VisitorId);
         
         modelBuilder.Entity<Fine>()
             .HasOne(f => f.BorrowBook)
             .WithOne(bb => bb.Fine)
-            .HasForeignKey<Fine>(f => f.BorrowID);
+            .HasForeignKey<Fine>(f => f.BorrowId);
         
         modelBuilder.Entity<BookCopy>()
-            .HasIndex(bc => bc.BookID); 
+            .HasIndex(bc => bc.BookId); 
 
         modelBuilder.Entity<BorrowBook>()
-            .HasIndex(bb => bb.VisitorID);
+            .HasIndex(bb => bb.VisitorId);
 
         modelBuilder.Entity<BorrowBook>()
             .HasIndex(bb => bb.BorrowBookStart); 

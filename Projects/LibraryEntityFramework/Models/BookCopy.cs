@@ -6,9 +6,9 @@ namespace Entity_Framework.Models;
 public class BookCopy
 {
     
-    public int BookCopyID{get; set;}
+    public int Id{get; set;}
     
-    public int BookID {get; set;}
+    public int BookId {get; set;}
     public virtual Book? Book{get; set;}
     
     [Required]

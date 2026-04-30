@@ -5,7 +5,7 @@ namespace Entity_Framework.Models;
 
 public class Book
 {
-    public int BookID {get; set;}
+    public int Id {get; set;}
 
     [Required]
     [MaxLength(100)]
