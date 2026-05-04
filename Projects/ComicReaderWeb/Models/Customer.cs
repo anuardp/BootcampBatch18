@@ -11,6 +11,7 @@ public class Customer
     public string Role {get; set;} = "User";
     public bool IsSubscribe {get; set;} = false;
     public DateTime? SubscribeEndDate {get; set;}
+    public string PasswordHash { get; set; } = string.Empty;
 
     public virtual ICollection<SubscribeHistory> SubscribeHistories {get; set;} = new List<SubscribeHistory>();
 }
