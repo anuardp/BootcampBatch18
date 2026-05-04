@@ -10,5 +10,5 @@ public class Chapter
     public int TotalPage {get; set;}
     public DateTime? DateUploaded {get; set;}
     public virtual Comic? Comic {get; set;}
-    public virtual ICollection<Page> Pages {get; set;} = new List<Page>();
+    public virtual ICollection<Page>? Pages {get; set;}
 }

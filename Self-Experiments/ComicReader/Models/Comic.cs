@@ -15,5 +15,5 @@ public class Comic
     public DateTime DateAdded {get; set;}
     public int TotalChapter {get; set;}
 
-    public virtual ICollection<Chapter>? Chapters {get; set;} = new List<Chapter>();
+    public virtual ICollection<Chapter> Chapters {get; set;} = new List<Chapter>();
 }

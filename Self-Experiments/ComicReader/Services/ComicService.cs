@@ -23,7 +23,9 @@ namespace ComicReader.Services
 
         public async Task<Comic?> GetComicByIdAsync(int id)
         {
-            return await _context.Comics.Include(c => c.Chapters).ThenInclude(ch => ch.Pages).FirstOrDefaultAsync(c => c.Id == id);
+            return await _context.Comics.Include(c => c.Chapters)
+                .ThenInclude(ch => ch.Pages)
+                .FirstOrDefaultAsync(c => c.Id == id);
         }
 
         public async Task<Comic?> UpdateComicAsync(int id, Comic updated)
