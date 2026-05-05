@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using ComicReader.Services;
+using ComicReader.Models;
 using ComicReader.DTOs;
 using FluentValidation;
 using System.Security.Claims;
@@ -126,12 +127,22 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemoveChapter(RemoveChapterDto dto)
     {
+        var chapterResult = await _chapterService.GetByIdAsync(dto.ChapterId);
+        if (!chapterResult.Success || chapterResult.Data == null)
+        {
+            TempData["ErrorMessage"] = "Chapter not found.";
+            return RedirectToAction("Comics");
+        }
+
+        var comicId = chapterResult.Data.ComicId;
+        
         var result = await _chapterService.RemoveChapterAsync(dto, User.FindFirst(ClaimTypes.Role)?.Value ?? "");
         if (!result.Success)
             TempData["ErrorMessage"] = result.Message;
         else
             TempData["SuccessMessage"] = "Chapter removed.";
-        return RedirectToAction("EditComic", new { id = dto.ComicId });
+
+        return RedirectToAction("EditComic", new { id = comicId });
     }
 
     // PAGE MANAGEMENT
@@ -220,11 +231,22 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemovePage(RemovePageDto dto)
     {
+        // get chapterId first
+        var pageResult = await _pageService.GetByIdAsync(dto.PageId);
+        if (!pageResult.Success || pageResult.Data == null)
+        {
+            TempData["ErrorMessage"] = "Page not found.";
+            return RedirectToAction("Comics");
+        }
+        
+        var chapterId = pageResult.Data.ChapterId;
+        
         var result = await _pageService.RemovePageAsync(dto, User.FindFirst(ClaimTypes.Role)?.Value ?? "");
         if (!result.Success)
             TempData["ErrorMessage"] = result.Message;
         else
             TempData["SuccessMessage"] = "Page removed.";
-        return RedirectToAction(nameof(ManagePages), new { chapterId = result.Data });
+        
+        return RedirectToAction("ManagePages", new { chapterId = chapterId });
     }
 }
