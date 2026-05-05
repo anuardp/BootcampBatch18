@@ -1,8 +1,62 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model List<ComicReader.Models.Comic>
+@{
+    ViewData["Title"] = "Home - Comic Reader";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="hero-section bg-primary text-white py-5 mb-4 rounded">
+    <div class="container text-center">
+        <h1 class="display-4">Welcome to Comic Reader</h1>
+        <p class="lead">Read your favorite comics online. Free and premium titles available.</p>
+        @if (!User.Identity.IsAuthenticated)
+        {
+            <a asp-controller="Account" asp-action="Register" class="btn btn-light btn-lg">Get Started</a>
+        }
+    </div>
+</div>
+
+<div class="container">
+    <h2 class="mb-4"><i class="fas fa-book"></i> Available Comics</h2>
+    @if (Model.Any())
+    {
+        <div class="row">
+            @foreach (var comic in Model)
+            {
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        @* Placeholder cover image *@
+                        <div class="comic-cover bg-secondary d-flex align-items-center justify-content-center text-white">
+                            <i class="fas fa-book fa-3x"></i>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">@comic.Title</h5>
+                            <p class="card-text small text-muted">@comic.Author</p>
+                            <p class="card-text">@comic.Genre</p>
+                            @if (comic.IsPremium)
+                            {
+                                <span class="badge bg-warning text-dark">Premium</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">Free</span>
+                            }
+                        </div>
+                        <div class="card-footer bg-white">
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <a asp-controller="Comic" asp-action="Read" asp-route-id="@comic.Id" class="btn btn-primary btn-sm w-100">Read</a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Account" asp-action="Login" class="btn btn-outline-secondary btn-sm w-100">Login to Read</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">No comics available yet.</div>
+    }
 </div>

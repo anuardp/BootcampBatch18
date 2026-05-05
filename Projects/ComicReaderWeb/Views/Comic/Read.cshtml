@@ -1,0 +1,41 @@
+@model ComicReader.DTOs.ReadComicDto
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container">
+    <h2>@Model.Title</h2>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">Chapters</div>
+                <div class="list-group list-group-flush">
+                    @foreach (var ch in Model.Chapters)
+                    {
+                        <a asp-action="Read" asp-route-id="@Model.ComicId" asp-route-chapterId="@ch.Id" 
+                           class="list-group-item list-group-item-action @(ch.Id == Model.SelectedChapterId ? "active" : "")">
+                            Chapter @ch.ChapterNumber
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            @if (Model.Pages.Any())
+            {
+                <div class="text-center">
+                    @foreach (var pg in Model.Pages)
+                    {
+                        <img src="@pg.PageUrl" class="img-fluid mb-3" alt="Page @pg.PageNumber" style="max-width:100%;" />
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">No pages available for this chapter.</div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,22 @@
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <h2>Admin Dashboard</h2>
+        <p>Welcome, @User.Identity.Name</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-book fa-3x text-primary"></i>
+                <h5 class="card-title mt-2">Manage Comics</h5>
+                <a asp-action="Comics" class="btn btn-primary">Go</a>
+            </div>
+        </div>
+    </div>
+</div>

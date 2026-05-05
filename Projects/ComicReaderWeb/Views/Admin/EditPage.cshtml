@@ -1,0 +1,20 @@
+@model ComicReader.DTOs.UpdatePageDto
+@{
+    ViewData["Title"] = "Edit Page";
+}
+
+<h2>Edit Page</h2>
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div class="mb-3">
+        <label asp-for="PageNumber"></label>
+        <input asp-for="PageNumber" class="form-control" />
+        <span asp-validation-for="PageNumber" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="PageUrl"></label>
+        <input asp-for="PageUrl" class="form-control" />
+        <span asp-validation-for="PageUrl" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Update</button>
+</form>

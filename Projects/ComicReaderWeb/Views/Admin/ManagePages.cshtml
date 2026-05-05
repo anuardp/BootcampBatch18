@@ -1,0 +1,37 @@
+@model List<ComicReader.Models.Page>
+@{
+    ViewData["Title"] = "Manage Pages";
+    int chapterId = ViewBag.ChapterId;
+}
+
+<div class="d-flex justify-content-between mb-3">
+    <h2>Pages for Chapter @chapterId</h2>
+    <a asp-action="AddPage" asp-route-chapterId="@chapterId" class="btn btn-success">Add Page</a>
+</div>
+
+@if (Model.Any())
+{
+    <table class="table table-bordered">
+        <thead><tr><th>Page #</th><th>Image URL</th><th>Actions</th></tr></thead>
+        <tbody>
+            @foreach (var pg in Model.OrderBy(p => p.PageNumber))
+            {
+                <tr>
+                    <td>@pg.PageNumber</td>
+                    <td>@pg.PageUrl</td>
+                    <td>
+                        <a asp-action="EditPage" asp-route-id="@pg.Id" class="btn btn-sm btn-warning">Edit</a>
+                        <form asp-action="RemovePage" method="post" style="display:inline;">
+                            <input type="hidden" name="PageId" value="@pg.Id" />
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete page?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">No pages yet.</div>
+}

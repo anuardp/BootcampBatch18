@@ -1,0 +1,19 @@
+@model ComicReader.DTOs.AddNewChapterDto
+@{
+    ViewData["Title"] = "Add Chapter";
+}
+
+<h2>Add Chapter</h2>
+<form method="post">
+    <input type="hidden" asp-for="ComicId" />
+    <div class="mb-3">
+        <label>Comic ID</label>
+        <input class="form-control" value="@Model.ComicId" readonly />
+    </div>
+    <div class="mb-3">
+        <label asp-for="ChapterNumber"></label>
+        <input asp-for="ChapterNumber" class="form-control" />
+        <span asp-validation-for="ChapterNumber" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Add</button>
+</form>

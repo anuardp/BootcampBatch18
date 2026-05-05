@@ -1,0 +1,41 @@
+@model List<ComicReader.Models.Comic>
+@{
+    ViewData["Title"] = "Manage Comics";
+}
+
+<div class="d-flex justify-content-between mb-3">
+    <h2>Comics</h2>
+    <a asp-action="AddComic" class="btn btn-success"><i class="fas fa-plus"></i> Add Comic</a>
+</div>
+
+@if (Model.Any())
+{
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr><th>Id</th><th>Title</th><th>Author</th><th>Genre</th><th>Premium</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var comic in Model)
+            {
+                <tr>
+                    <td>@comic.Id</td>
+                    <td>@comic.Title</td>
+                    <td>@comic.Author</td>
+                    <td>@comic.Genre</td>
+                    <td>@(comic.IsPremium ? "Yes" : "No")</td>
+                    <td>
+                        <a asp-action="AddChapter" asp-route-comicId="@comic.Id" class="btn btn-sm btn-primary">Add Chapter</a>
+                        <form asp-action="RemoveComic" method="post" style="display:inline;">
+                            <input type="hidden" name="ComicId" value="@comic.Id" />
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete comic?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="alert alert-info">No comics found.</div>
+}
