@@ -1,12 +1,12 @@
 @model List<ComicReader.Models.Page>
 @{
     ViewData["Title"] = "Manage Pages";
-    int chapterId = ViewBag.ChapterId;
+    int chapterNumber = ViewBag.ChapterNumber; // ambil dari ViewBag
 }
 
 <div class="d-flex justify-content-between mb-3">
-    <h2>Pages for Chapter @chapterId</h2>
-    <a asp-action="AddPage" asp-route-chapterId="@chapterId" class="btn btn-success">Add Page</a>
+    <h2>Pages for Chapter @chapterNumber</h2>
+    <a asp-action="AddPage" asp-route-chapterId="@ViewBag.ChapterId" class="btn btn-success">Add Page</a>
 </div>
 
 @if (Model.Any())

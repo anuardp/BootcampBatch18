@@ -1,9 +1,10 @@
 @model ComicReader.DTOs.AddPageDto
 @{
     ViewData["Title"] = "Add Page";
+    int chapterNumber = ViewBag.ChapterNumber; // Ambil dari ViewBag
 }
 
-<h2>Add Page to Chapter @Model.ChapterId</h2>
+<h2>Add Page to Chapter @chapterNumber</h2>
 <form method="post">
     <input type="hidden" asp-for="ChapterId" />
     <div class="mb-3">

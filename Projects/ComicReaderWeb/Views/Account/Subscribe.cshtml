@@ -1,0 +1,32 @@
+@model ComicReader.DTOs.SubscribeToPremiumDto
+@{
+    ViewData["Title"] = "Upgrade to Premium";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark text-center">
+                <h3><i class="fas fa-gem"></i> Upgrade to Premium</h3>
+            </div>
+            <div class="card-body">
+                <p>Get unlimited access to all premium comics.</p>
+                <hr />
+                <form method="post">
+                    <input type="hidden" asp-for="CustomerId" />
+                    <div class="mb-3">
+                        <label asp-for="DurationDays" class="form-label"></label>
+                        <input asp-for="DurationDays" class="form-control" />
+                        <span asp-validation-for="DurationDays" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="PaymentMethod" class="form-label"></label>
+                        <input asp-for="PaymentMethod" class="form-control" />
+                        <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">Confirm Subscription</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

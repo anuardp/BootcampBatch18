@@ -12,17 +12,20 @@ namespace ComicReader.Controllers;
 public class AccountController : Controller
 {
     private readonly ICustomerService _customerService;
+    private readonly ISubscribeHistoryService _subscribeHistoryService;
     private readonly IValidator<RegisterDto> _registerValidator;
     private readonly IValidator<LoginDto> _loginValidator;
 
     public AccountController(
         ICustomerService customerService,
         IValidator<RegisterDto> registerValidator,
-        IValidator<LoginDto> loginValidator)
+        IValidator<LoginDto> loginValidator,
+        ISubscribeHistoryService subscribeHistoryService)
     {
         _customerService = customerService;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
+        _subscribeHistoryService = subscribeHistoryService;
     }
 
     [AllowAnonymous]
@@ -143,5 +146,50 @@ public class AccountController : Controller
     public IActionResult AccessDenied()
     {
         return View();
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> Subscribe()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out int userId))
+            return RedirectToAction(nameof(Login));
+
+        var customerResult = await _customerService.GetByIdAsync(userId);
+        if (!customerResult.Success || customerResult.Data == null)
+            return RedirectToAction(nameof(Login));
+
+        var model = new SubscribeToPremiumDto
+        {
+            CustomerId = userId,
+            DurationDays = 30,
+            PaymentMethod = "QRIS"
+        };
+        return View(model);
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Subscribe(SubscribeToPremiumDto dto)
+    {
+        if (!ModelState.IsValid)
+            return View(dto);
+
+        // Pastikan CustomerId sesuai dengan user yang login
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdClaim, out int userId) || userId != dto.CustomerId)
+            return Unauthorized();
+
+        var result = await _subscribeHistoryService.SubscribeAsync(dto);
+        if (!result.Success)
+        {
+            TempData["ErrorMessage"] = result.Message;
+            return View(dto);
+        }
+
+        TempData["SuccessMessage"] = "Subscription successful! You now have access to all premium comics.";
+        return RedirectToAction(nameof(Profile));
     }
 }

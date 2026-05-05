@@ -53,21 +53,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Page>()
             .HasIndex(p => new { p.ChapterId, p.PageNumber }).IsUnique();
 
-        // Index for foreign keys
+        
         modelBuilder.Entity<SubscribeHistory>().HasIndex(sh => sh.CustomerId);
         modelBuilder.Entity<Chapter>().HasIndex(ch => ch.ComicId);
         modelBuilder.Entity<Page>().HasIndex(p => p.ChapterId);
 
-        SeedData(modelBuilder);
     }
-
-    private void SeedData(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Comic>().HasData(
-            new Comic { Id = 1, Title = "Sample Comic", Author = "Author Name", Genre = "Action", IsPremium = false, TotalChapter = 0, DateAdded = DateTime.UtcNow }
-        );
-        modelBuilder.Entity<Customer>().HasData(
-            new Customer { Id = 1, Name = "Admin User", Email = "admin@example.com", Role = "Admin", IsSubscribe = false, SubscribeEndDate = null }
-        );
-    }
+    
 }

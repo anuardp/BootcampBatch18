@@ -12,13 +12,12 @@
 {
     <table class="table table-bordered">
         <thead class="table-dark">
-            <tr><th>Id</th><th>Title</th><th>Author</th><th>Genre</th><th>Premium</th><th>Actions</th></tr>
+            <tr><th>Title</th><th>Author</th><th>Genre</th><th>Premium</th><th>Actions</th></tr>
         </thead>
         <tbody>
             @foreach (var comic in Model)
             {
                 <tr>
-                    <td>@comic.Id</td>
                     <td>@comic.Title</td>
                     <td>@comic.Author</td>
                     <td>@comic.Genre</td>

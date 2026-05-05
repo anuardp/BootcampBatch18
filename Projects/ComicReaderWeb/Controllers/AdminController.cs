@@ -153,19 +153,36 @@ public class AdminController : Controller
 
     // PAGE MANAGEMENT
     [HttpGet]
-    public async Task<IActionResult> ManagePages(int chapterId)
+public async Task<IActionResult> ManagePages(int chapterId)
+{
+    var chapterResult = await _chapterService.GetByIdAsync(chapterId);
+    if (!chapterResult.Success || chapterResult.Data == null)
     {
-        ViewBag.ChapterId = chapterId;
-        var pagesResult = await _pageService.GetPagesByChapterIdAsync(chapterId);
-        return View(pagesResult.Data ?? new List<Page>());
+        TempData["ErrorMessage"] = "Chapter not found.";
+        return RedirectToAction("Comics");
     }
+    
+    ViewBag.ChapterNumber = chapterResult.Data.ChapterNumber;
+    ViewBag.ChapterId = chapterId; 
+    var pagesResult = await _pageService.GetPagesByChapterIdAsync(chapterId);
+    return View(pagesResult.Data ?? new List<Page>());
+}
 
     [HttpGet]
-    public IActionResult AddPage(int chapterId)
+    public async Task<IActionResult> AddPage(int chapterId)
     {
-        ViewBag.ChapterId = chapterId;
-        return View();
+        var chapterResult = await _chapterService.GetByIdAsync(chapterId);
+        if (!chapterResult.Success || chapterResult.Data == null)
+        {
+            TempData["ErrorMessage"] = "Chapter not found.";
+            return RedirectToAction("Comics");
+        }
+        
+        ViewBag.ChapterNumber = chapterResult.Data.ChapterNumber;
+        var dto = new AddPageDto { ChapterId = chapterId };
+        return View(dto);
     }
+    
 
     [HttpPost]
     [ValidateAntiForgeryToken]
