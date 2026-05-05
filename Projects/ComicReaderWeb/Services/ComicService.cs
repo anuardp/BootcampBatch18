@@ -87,4 +87,12 @@ public class ComicService : IComicService
             return ApiResponseDto<Comic>.ErrorResult("Comic not found.");
         return ApiResponseDto<Comic>.SuccessResult(comic);
     }
+
+    public async Task<ApiResponseDto<Comic>> GetByIdWithChaptersAsync(int id)
+    {
+        var comic = await _comicRepo.GetByIdWithChaptersAsync(id);
+        if (comic == null)
+            return ApiResponseDto<Comic>.ErrorResult("Comic not found.");
+        return ApiResponseDto<Comic>.SuccessResult(comic);
+    }
 }

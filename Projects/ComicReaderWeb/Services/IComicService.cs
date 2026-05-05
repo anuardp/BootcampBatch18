@@ -10,4 +10,5 @@ public interface IComicService
     Task<ApiResponseDto<List<Comic>>> GetAllComicsAsync();
     Task<ApiResponseDto<ReadComicDto>> GetComicForReadingAsync(int comicId, int? chapterId, int customerId, bool isSubscribed);
     Task<ApiResponseDto<Comic>> GetByIdAsync(int id);
+    Task<ApiResponseDto<Comic>> GetByIdWithChaptersAsync(int id);
 }

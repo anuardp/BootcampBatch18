@@ -12,7 +12,7 @@ public class UpdatePageValidator : AbstractValidator<UpdatePageDto>
         RuleFor(x => x.PageNumber)
             .GreaterThan(0).WithMessage("Page number must be greater than 0.");
 
-        RuleFor(x => x.ImageUrl)
+        RuleFor(x => x.PageUrl)
             .NotEmpty().WithMessage("Image URL is required.")
             .MaximumLength(500).WithMessage("Image URL cannot exceed 500 characters.")
             .Must(url => url.StartsWith("/") || url.StartsWith("http"))

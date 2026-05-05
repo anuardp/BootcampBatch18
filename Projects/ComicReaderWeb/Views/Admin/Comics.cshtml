@@ -24,7 +24,8 @@
                     <td>@comic.Genre</td>
                     <td>@(comic.IsPremium ? "Yes" : "No")</td>
                     <td>
-                        <a asp-action="AddChapter" asp-route-comicId="@comic.Id" class="btn btn-sm btn-primary">Add Chapter</a>
+                        <!-- Tombol Edit mengarah ke EditComic -->
+                        <a asp-action="EditComic" asp-route-id="@comic.Id" class="btn btn-sm btn-primary">Edit</a>
                         <form asp-action="RemoveComic" method="post" style="display:inline;">
                             <input type="hidden" name="ComicId" value="@comic.Id" />
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete comic?')">Delete</button>

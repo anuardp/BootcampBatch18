@@ -44,9 +44,15 @@ public class AdminController : Controller
     }
 
     // COMIC MANAGEMENT
-    public IActionResult Comics()
+    public async Task<IActionResult> Comics()
     {
-        return View();
+        var result = await _comicService.GetAllComicsAsync();
+        if (!result.Success)
+        {
+            TempData["ErrorMessage"] = result.Message;
+            return View(new List<Comic>()); // Kirim list kosong
+        }
+        return View(result.Data ?? new List<Comic>());
     }
 
     [HttpGet]
@@ -94,8 +100,8 @@ public class AdminController : Controller
     [HttpGet]
     public IActionResult AddChapter(int comicId)
     {
-        ViewBag.ComicId = comicId;
-        return View();
+        var dto = new AddNewChapterDto { ComicId = comicId };
+        return View(dto);
     }
 
     [HttpPost]
@@ -202,6 +208,16 @@ public class AdminController : Controller
             PageUrl = pageResult.Data.PageUrl
         };
         return View(dto);
+    }
+    public async Task<IActionResult> EditComic(int id)
+    {
+        var comicResult = await _comicService.GetByIdWithChaptersAsync(id); 
+        if (!comicResult.Success || comicResult.Data == null)
+        {
+            TempData["ErrorMessage"] = "Comic not found.";
+            return RedirectToAction(nameof(Comics));
+        }
+        return View(comicResult.Data);
     }
 
     [HttpPost]

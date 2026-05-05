@@ -69,13 +69,13 @@ public class ComicReaderProfile : Profile
             .ForMember(dest => dest.PageUrl, opt => opt.MapFrom(src => src.PageUrl))
             .ForMember(dest => dest.Chapter, opt => opt.Ignore());
 
-        // Mapping untuk PageInfo (nested di ReadComicDto)
+        
         CreateMap<Page, PageInfo>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.PageNumber, opt => opt.MapFrom(src => src.PageNumber))
-            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.PageUrl));
+            .ForMember(dest => dest.PageUrl, opt => opt.MapFrom(src => src.PageUrl));
 
-        // SubscribeHistory optional (jika diperlukan untuk response)
+        // SubscribeHistory 
         CreateMap<SubscribeHistory, SubscribeHistoryDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.CustomerId))

@@ -1,0 +1,45 @@
+@model ComicReader.Models.Comic
+@{
+    ViewData["Title"] = $"Edit {Model.Title}";
+}
+
+<h2>@Model.Title</h2>
+<p>Author: @Model.Author | Genre: @Model.Genre | Premium: @(Model.IsPremium ? "Yes" : "No")</p>
+
+<h3>Chapters</h3>
+@if (Model.Chapters != null && Model.Chapters.Any())
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Chapter #</th>
+                <th>Pages</th>
+                <th>Uploaded</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ch in Model.Chapters.OrderBy(c => c.ChapterNumber))
+            {
+                <tr>
+                    <td>@ch.ChapterNumber</td>
+                    <td>@ch.TotalPage</td>
+                    <td>@(ch.DateUploaded?.ToString("yyyy-MM-dd") ?? "-")</td>
+                    <td>
+                        <a asp-action="ManagePages" asp-route-chapterId="@ch.Id" class="btn btn-sm btn-primary">Pages</a>
+                        <form asp-action="RemoveChapter" method="post" style="display:inline;">
+                            <input type="hidden" name="ChapterId" value="@ch.Id" />
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete chapter?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No chapters yet.</p>
+}
+<a asp-action="AddChapter" asp-route-comicId="@Model.Id" class="btn btn-success">Add New Chapter</a>
+<a asp-action="Comics" class="btn btn-secondary">Back to Comics</a>

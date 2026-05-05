@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using ComicReader.Models;
 
@@ -11,62 +12,98 @@ public static class SeedData
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<Customer>>();
 
-        // Ensure database is created
         await context.Database.EnsureCreatedAsync();
 
-        // Seed Customers only if table is empty
-        if (!context.Customers.Any())
+        // Helper untuk menambah customer jika belum ada
+        async Task<Customer> AddCustomerIfNotExists(
+            string email,
+            string name,
+            string phone,
+            string role,
+            bool isSubscribe,
+            DateTime? subscribeEndDate,
+            string plainPassword)
         {
-            // 1. Admin User
-            var admin = new Customer
+            var existing = await context.Customers.FirstOrDefaultAsync(c => c.Email == email);
+            if (existing != null)
             {
-                Name = "Admin User",
-                Email = "admin@comicreader.com",
-                PhoneNumber = "081234567890",
-                Role = "Admin",
-                IsSubscribe = false,
-                SubscribeEndDate = null
-            };
-            admin.PasswordHash = passwordHasher.HashPassword(admin, "Admin@123");
+                Console.WriteLine($"Customer already exists: {email}");
+                return existing;
+            }
 
-            // 2. Free User (not subscribed)
-            var freeUser = new Customer
+            var customer = new Customer
             {
-                Name = "Free User",
-                Email = "free@comicreader.com",
-                PhoneNumber = "081298765432",
-                Role = "User",
-                IsSubscribe = false,
-                SubscribeEndDate = null
+                Name = name,
+                Email = email,
+                PhoneNumber = phone,
+                Role = role,
+                IsSubscribe = isSubscribe,
+                SubscribeEndDate = subscribeEndDate
             };
-            freeUser.PasswordHash = passwordHasher.HashPassword(freeUser, "Free@123");
+            customer.PasswordHash = passwordHasher.HashPassword(customer, plainPassword);
 
-            // 3. Subscribed User (subscribed 1 week ago)
-            var subUser = new Customer
-            {
-                Name = "Subscribed User",
-                Email = "subscribed@comicreader.com",
-                PhoneNumber = "081255555555",
-                Role = "User",
-                IsSubscribe = true,
-                SubscribeEndDate = DateTime.UtcNow.AddDays(23) // 30 - 7 = 23 days remaining
-            };
-            subUser.PasswordHash = passwordHasher.HashPassword(subUser, "Sub@123");
-
-            await context.Customers.AddRangeAsync(admin, freeUser, subUser);
-            await context.SaveChangesAsync();
-
-            // Seed SubscribeHistory for the subscribed user
-            var history = new SubscribeHistory
-            {
-                CustomerId = subUser.Id,
-                StartDate = DateTime.UtcNow.AddDays(-7),
-                EndDate = DateTime.UtcNow.AddDays(23),
-                TransactionDate = DateTime.UtcNow.AddDays(-7),
-                PaymentMethod = "QRIS"
-            };
-            await context.SubscribeHistories.AddAsync(history);
-            await context.SaveChangesAsync();
+            await context.Customers.AddAsync(customer);
+            await context.SaveChangesAsync(); // Simpan agar mendapatkan Id
+            Console.WriteLine($"Added new customer: {email}");
+            return customer;
         }
+
+        // 1. Admin
+        var admin = await AddCustomerIfNotExists(
+            email: "admin@comicreader.com",
+            name: "Admin User",
+            phone: "081234567890",
+            role: "Admin",
+            isSubscribe: false,
+            subscribeEndDate: null,
+            plainPassword: "Admin@123"
+        );
+
+        // 2. Free User (tidak subscribe)
+        var freeUser = await AddCustomerIfNotExists(
+            email: "free@comicreader.com",
+            name: "Free User",
+            phone: "081298765432",
+            role: "User",
+            isSubscribe: false,
+            subscribeEndDate: null,
+            plainPassword: "Free@123"
+        );
+
+        // 3. Subscribed User (subscribe mulai hari ini, 30 hari)
+        var subUser = await AddCustomerIfNotExists(
+            email: "subscribed@comicreader.com",
+            name: "Subscribed User",
+            phone: "081255555555",
+            role: "User",
+            isSubscribe: true,
+            subscribeEndDate: DateTime.UtcNow.AddDays(30),
+            plainPassword: "Sub@123"
+        );
+
+        // Tambahkan SubscribeHistory untuk subscribed user (jika belum ada)
+        if (subUser != null)
+        {
+            var historyExists = await context.SubscribeHistories.AnyAsync(h => h.CustomerId == subUser.Id);
+            if (!historyExists)
+            {
+                var history = new SubscribeHistory
+                {
+                    CustomerId = subUser.Id,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddDays(30),
+                    TransactionDate = DateTime.UtcNow,
+                    PaymentMethod = "QRIS"
+                };
+                await context.SubscribeHistories.AddAsync(history);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"Added SubscribeHistory for subscribed user (start today).");
+            }
+            else
+            {
+                Console.WriteLine($"SubscribeHistory already exists for subscribed user.");
+            }
+        }
+        Console.WriteLine("Seeding completed.");
     }
 }
