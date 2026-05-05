@@ -47,7 +47,7 @@ public class ComicReaderProfile : Profile
             .ForMember(dest => dest.Pages, opt => opt.Ignore())
             .ForMember(dest => dest.Comic, opt => opt.Ignore());
 
-        // Mapping untuk ChapterInfo (nested di ReadComicDto)
+        // Mapping untuk ChapterInfo 
         CreateMap<Chapter, ChapterInfo>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.ChapterNumber, opt => opt.MapFrom(src => src.ChapterNumber))
