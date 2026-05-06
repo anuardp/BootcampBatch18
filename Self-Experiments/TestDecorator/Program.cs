@@ -1,72 +1,83 @@
-﻿public interface IBike
+﻿public interface IBeverage
 {
-    string GetDetails();
-    double GetPrice();
+    string GetDescription();
+    double Cost();
 }
 
-class AluminiumBike : IBike
+// ConcreteComponent
+public class Espresso : IBeverage
 {
-    public double GetPrice() => 100.0;
-
-    public string GetDetails() => "Aluminium Bike";
+    public string GetDescription() => "Espresso";
+    public double Cost() => 1.99;
 }
 
-public class CarbonBike : IBike
+public class HouseBlend : IBeverage
 {
-    public double GetPrice() => 1000.0;
-
-    public string GetDetails() => "Carbon";
+    public string GetDescription() => "House Blend";
+    public double Cost() => 0.89;
 }
 
-
-public abstract class BikeAccessories : IBike
+// Decorator (abstract)
+public abstract class CondimentDecorator : IBeverage
 {
-    private readonly IBike _bike;
+    protected IBeverage _beverage;
 
-    public BikeAccessories(IBike bike)
+    public CondimentDecorator(IBeverage beverage)
     {
-        _bike = bike;
+        _beverage = beverage;
     }
 
-    public virtual double GetPrice() => _bike.GetPrice();
-
-    public virtual string GetDetails() => _bike.GetDetails();
+    public abstract string GetDescription();
+    public abstract double Cost();
 }
 
-class SecurityPackage : BikeAccessories
+public class Milk : CondimentDecorator
 {
-    public SecurityPackage(IBike bike) : base(bike)
-    {
-        // ...
-    }
+    public Milk(IBeverage beverage) : base(beverage) { }
 
-    public override string GetDetails() => $"{base.GetDetails()} + Security Package";
-    public override double GetPrice() => base.GetPrice() + 1;
+    public override string GetDescription() =>
+        _beverage.GetDescription() + ", Milk";
+
+    public override double Cost() =>
+        _beverage.Cost() + 0.30;
 }
 
-class SportPackage : BikeAccessories
+public class Mocha : CondimentDecorator
 {
-    public SportPackage(IBike bike) : base(bike)
-    {
-       
-    }
+    public Mocha(IBeverage beverage) : base(beverage) { }
 
-    public override string GetDetails() => $"{base.GetDetails()} + Sport Package";
+    public override string GetDescription() =>
+        _beverage.GetDescription() + ", Mocha";
 
-    public override double GetPrice() => base.GetPrice() + 10;
+    public override double Cost() =>
+        _beverage.Cost() + 0.40;
 }
 
-public class BikeShop
+class Program
 {
-    static void Main(string[] args)
+    static void Main()
     {
-        AluminiumBike basicBike = new AluminiumBike();
-        BikeAccessories upgraded = new SportPackage(basicBike);
-        upgraded = new SecurityPackage(upgraded);
+        // Espresso + Mocha + Milk
+        IBeverage beverage = new Espresso();
+        beverage = new Mocha(beverage);
+        beverage = new Milk(beverage);
 
-        CarbonBike sepedaku = new CarbonBike();
+        Console.WriteLine($"{beverage.GetDescription()} : ${beverage.Cost():F2}");
+        // Output: Espresso, Mocha, Milk : $2.69
 
-        Console.WriteLine($"Bike: '{upgraded.GetDetails()}' Cost: {upgraded.GetPrice()}");
-        Console.WriteLine($"Bike: '{sepedaku.GetDetails()}' Cost: {sepedaku.GetPrice()}");
+        // HouseBlend + Milk
+        IBeverage houseBlend = new HouseBlend();
+        houseBlend = new Milk(houseBlend);
+
+        Console.WriteLine($"{houseBlend.GetDescription()} : ${houseBlend.Cost():F2}");
+        // Output: House Blend, Milk : $1.19
+
+        // Espresso + double Mocha (ditumpuk dua kali)
+        IBeverage doubleMocha = new Espresso();
+        doubleMocha = new Mocha(doubleMocha);
+        doubleMocha = new Mocha(doubleMocha);
+
+        Console.WriteLine($"{doubleMocha.GetDescription()} : ${doubleMocha.Cost():F2}");
+        // Output: Espresso, Mocha, Mocha : $2.79
     }
 }
